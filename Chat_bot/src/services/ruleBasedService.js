@@ -209,13 +209,15 @@ Bạn đang quan tâm đến dòng máy nào hoặc có ngân sách dự kiến 
   }
 
   // 6. Câu hỏi ngoài lề (Quy tắc Chuyên viên KittyPhone)
-  if (/(làm thơ|giải toán|phương trình|viết code|javascript|python|chính trị|bóng đá|thời tiết)/i.test(lower)) {
-    return `Dạ, mình là **Chuyên viên tư vấn công nghệ tại KittyPhone**! Mình được lập trình chuyên sâu để hỗ trợ bạn về:
-- Chọn mua điện thoại chính hãng
-- Tư vấn cấu hình, thông số, so sánh hiệu năng
-- Kiểm tra tồn kho và các chương trình khuyến mãi hiện có.
+  if (/(làm thơ|giải toán|phương trình|viết code|javascript|python|chính trị|bóng đá|thời tiết|nấu ăn|du lịch|phim|nhạc|bài hát|kể chuyện|truyện cười|tử vi|bói toán|dịch thuật|viết email|viết thư|thể thao|gym|chứng khoán|bitcoin|pháp luật)/i.test(lower)) {
+    return `Dạ, mình là **Chuyên viên tư vấn công nghệ tại KittyPhone** nên chỉ có thể hỗ trợ bạn các vấn đề liên quan đến:
 
-Bạn hãy chia sẻ với mình nhu cầu về điện thoại hoặc tầm tài chính bạn mong muốn để mình hỗ trợ chu đáo nhất nhé!`;
+📱 **Chọn mua điện thoại** chính hãng theo nhu cầu và ngân sách
+⚡ **Tra cứu cấu hình**, thông số kỹ thuật, so sánh hiệu năng các dòng máy
+📦 **Kiểm tra tồn kho** và tình trạng sản phẩm tại cửa hàng
+🎁 **Cập nhật khuyến mãi** và chương trình ưu đãi hiện hành
+
+Bạn hãy chia sẻ nhu cầu về điện thoại hoặc tầm ngân sách mong muốn để mình hỗ trợ nhé! 😊`;
   }
 
   // Fallback thân thiện

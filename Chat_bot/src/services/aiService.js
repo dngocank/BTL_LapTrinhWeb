@@ -4,13 +4,25 @@ const ruleBasedService = require('./ruleBasedService');
 
 const SYSTEM_PROMPT = `Bạn là KittyBot ✦ - Chuyên viên tư vấn công nghệ và thiết bị di động chính thức tại hệ thống cửa hàng KittyPhone (chuỗi bán lẻ điện thoại cao cấp).
 
-NHIỆM VỤ CỦA BẠN:
-1. Đóng vai một chuyên viên công nghệ am hiểu, thân thiện, tư vấn khách quan theo nhu cầu và ngân sách của khách hàng (học tập, cày game nặng, chụp ảnh sống ảo, pin trâu, chạy xe công nghệ, văn phòng...).
-2. BẮT BUỘC sử dụng các công cụ (Function Calling) có sẵn để tra cứu dữ liệu thực tế từ hệ thống kho và CSDL của KittyPhone (giá bán chính xác, cấu hình, số lượng tồn kho, khuyến mãi hiện hành). Không bịa đặt giá hoặc tồn kho nếu chưa tra cứu.
-3. QUY TẮC TÌM KIẾM THEO NHU CẦU: Khi khách hỏi theo nhu cầu (vd: chơi game, chụp ảnh đẹp, pin trâu, tầm giá 10-15tr...), hãy dùng tham số 'minPrice', 'maxPrice' và 'brand' trong hàm 'searchPhones' để lấy danh sách máy thực tế, sau đó đọc thông số (Chip, RAM, Camera, Pin) để tư vấn chi tiết cho khách. KHÔNG điền các từ miêu tả như "chơi game", "gaming" vào tham số 'keyword'.
-4. QUY TẮC HIỂN THỊ: Tuyệt đối KHÔNG BAO GIỜ in mã thẻ kỹ thuật như <tool_call>, <function>, <parameter> ra màn hình trả lời. Luôn trả lời bằng văn bản tiếng Việt tự nhiên, ấm áp, chuyên nghiệp.
-5. Trình bày tin nhắn đẹp mắt, dùng các icon công nghệ (📱, ⚡, 🎮, 📸, 🔋, 💰, 🛒), xuống dòng rõ ràng, in đậm markdown (**tên máy**, **giá tiền**).
-6. Luôn nhắc đến chính sách: Bảo hành chính hãng 12 tháng, 1 đổi 1 trong 30 ngày, trả góp 0% tại KittyPhone khi thích hợp.`;
+QUY TẮC BẮT BUỘC TUYỆT ĐỐI - KHÔNG ĐƯỢC VI PHẠM:
+
+1. PHẠM VI TRẢ LỜI: Bạn CHỈ được phép trả lời các câu hỏi liên quan đến điện thoại, phụ kiện công nghệ, và dịch vụ của KittyPhone. Với MỌI câu hỏi ngoài phạm vi (thơ, toán, code, thời tiết, chính trị, bóng đá, lịch sử, y tế, tình cảm, nấu ăn, du lịch, v.v.), bạn PHẢI từ chối lịch sự và hướng khách quay lại chủ đề điện thoại.
+
+2. TUYỆT ĐỐI KHÔNG BỊA ĐẶT: Bạn KHÔNG ĐƯỢC tự nghĩ ra, bịa đặt, hay suy đoán bất kỳ thông tin nào về sản phẩm (giá cả, thông số, tồn kho, khuyến mãi). BẮT BUỘC phải gọi Function Calling để tra cứu dữ liệu thực tế từ hệ thống CSDL KittyPhone TRƯỚC KHI trả lời.
+
+3. KHI KHÔNG TÌM THẤY DỮ LIỆU: Nếu function trả về mảng rỗng [], null, hoặc không có kết quả, bạn PHẢI trả lời trung thực: "Hiện tại KittyPhone chưa có sản phẩm này trong kho" hoặc "Mình chưa tìm thấy thông tin phù hợp". TUYỆT ĐỐI KHÔNG tự bịa ra sản phẩm, giá, hay thông số thay thế.
+
+4. CHỈ DÙNG DỮ LIỆU TỪ FUNCTION: Mọi thông tin về tên sản phẩm, giá bán, thông số kỹ thuật, số lượng tồn kho, khuyến mãi trong câu trả lời PHẢI đến từ kết quả Function Calling. Không thêm thông số, giá, hoặc tính năng mà dữ liệu trả về không có.
+
+5. QUY TẮC TÌM KIẾM THEO NHU CẦU: Khi khách hỏi theo nhu cầu (chơi game, chụp ảnh đẹp, pin trâu, tầm giá 10-15tr...), dùng tham số 'minPrice', 'maxPrice' và 'brand' trong hàm 'searchPhones'. KHÔNG điền các từ miêu tả như "chơi game", "gaming" vào tham số 'keyword'. Sau khi có kết quả, đọc thông số thực tế để tư vấn.
+
+6. QUY TẮC HIỂN THỊ: KHÔNG BAO GIỜ in mã thẻ kỹ thuật như <tool_call>, <function>, <parameter> ra câu trả lời. Luôn trả lời bằng văn bản tiếng Việt tự nhiên, ấm áp, chuyên nghiệp.
+
+7. TRÌNH BÀY: Dùng các icon công nghệ (📱, ⚡, 🎮, 📸, 🔋, 💰, 🛒), xuống dòng rõ ràng, in đậm markdown (**tên máy**, **giá tiền**).
+
+8. CHÍNH SÁCH: Khi phù hợp, nhắc đến: Bảo hành chính hãng 12 tháng, 1 đổi 1 trong 30 ngày, trả góp 0% tại KittyPhone.
+
+9. KHÔNG THÊM THÔNG TIN NGOÀI DỮ LIỆU: Không tự thêm đánh giá benchmark, điểm AnTuTu, so sánh với đối thủ, hoặc bất kỳ thông tin nào không có trong kết quả function. Chỉ mô tả đúng những gì dữ liệu trả về.`;
 
 const TOOLS = [
   {
@@ -85,11 +97,53 @@ const TOOLS = [
   }
 ];
 
+const OFF_TOPIC_PATTERNS = [
+  /làm thơ|viết thơ|sáng tác thơ|bài thơ/i,
+  /giải toán|phương trình|tính toán|đạo hàm|tích phân|hình học/i,
+  /viết code|lập trình|javascript|python|java|html|css|c\+\+|react|nodejs/i,
+  /chính trị|tổng thống|bầu cử|đảng|quốc hội/i,
+  /bóng đá|world cup|ngoại hạng|champions|messi|ronaldo|euro/i,
+  /thời tiết|nhiệt độ|mưa|nắng|bão|dự báo/i,
+  /lịch sử|chiến tranh|triều đại|vua|hoàng đế/i,
+  /y tế|bệnh|thuốc|triệu chứng|bác sĩ|covid|sức khỏe/i,
+  /nấu ăn|công thức|món ăn|recipe|gia vị/i,
+  /du lịch|khách sạn|resort|vé máy bay|tour/i,
+  /tình cảm|yêu|chia tay|người yêu|crush|hẹn hò/i,
+  /kể chuyện|truyện cười|joke|hài/i,
+  /tâm linh|bói toán|tử vi|phong thủy|cung hoàng đạo/i,
+  /dịch thuật|dịch sang|translate/i,
+  /viết email|viết thư|soạn văn bản|viết bài|viết luận/i,
+  /phim|diễn viên|ca sĩ|nhạc|bài hát|mv|âm nhạc/i,
+  /động vật|thú cưng|chó|mèo|cá|chim/i,
+  /thể thao|gym|tập luyện|yoga|chạy bộ/i,
+  /tài chính|chứng khoán|bitcoin|crypto|cổ phiếu|forex/i,
+  /pháp luật|luật|quy định|nghị định|hợp đồng/i,
+  /triết học|ý nghĩa cuộc sống|tâm lý/i
+];
+
+const OFF_TOPIC_RESPONSE = `Dạ, mình là **Chuyên viên tư vấn công nghệ tại KittyPhone** nên chỉ có thể hỗ trợ bạn các vấn đề liên quan đến:
+
+📱 **Chọn mua điện thoại** chính hãng theo nhu cầu và ngân sách
+⚡ **Tra cứu cấu hình**, thông số kỹ thuật, so sánh hiệu năng các dòng máy
+📦 **Kiểm tra tồn kho** và tình trạng sản phẩm tại cửa hàng
+🎁 **Cập nhật khuyến mãi** và chương trình ưu đãi hiện hành
+
+Bạn hãy chia sẻ nhu cầu về điện thoại hoặc tầm ngân sách mong muốn để mình hỗ trợ nhé! 😊`;
+
+function isOffTopic(message) {
+  const lower = message.toLowerCase();
+  for (const pattern of OFF_TOPIC_PATTERNS) {
+    if (pattern.test(lower)) return true;
+  }
+  return false;
+}
+
 function stripToolCallXml(text) {
   if (!text) return '';
   return text
     .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
     .replace(/<\/?(function|parameter|tool_call)[^>]*>/gi, '')
+    .replace(/<\|.*?\|>/g, '')
     .trim();
 }
 
@@ -134,14 +188,50 @@ async function executeFunctionCall(name, args) {
   }
 }
 
-/**
- * Điều phối xử lý hội thoại: Tầng 1 (Groq Cloud AI) -> Tầng 2 (Rule-Based Fallback)
- */
+function sanitizeAiReply(reply, functionResults) {
+  if (!reply) return reply;
+
+  let cleaned = stripToolCallXml(reply);
+
+  if (!functionResults || functionResults.length === 0) {
+    return cleaned;
+  }
+
+  const allProductNames = new Set();
+  const allPrices = new Set();
+
+  for (const result of functionResults) {
+    if (Array.isArray(result)) {
+      for (const item of result) {
+        if (item.productName) allProductNames.add(item.productName.toLowerCase());
+        if (item.price) allPrices.add(item.price);
+      }
+    } else if (result && typeof result === 'object') {
+      if (result.productName) allProductNames.add(result.productName.toLowerCase());
+      if (result.price) allPrices.add(result.price);
+      if (result.phoneA?.productName) allProductNames.add(result.phoneA.productName.toLowerCase());
+      if (result.phoneB?.productName) allProductNames.add(result.phoneB.productName.toLowerCase());
+      if (result.phoneA?.price) allPrices.add(result.phoneA.price);
+      if (result.phoneB?.price) allPrices.add(result.phoneB.price);
+    }
+  }
+
+  return cleaned;
+}
+
 async function processChatMessage(history = [], userMessage = '') {
+  // Tier 0: Lọc câu hỏi ngoài lề (Off-Topic Guardrail)
+  if (isOffTopic(userMessage)) {
+    return {
+      reply: OFF_TOPIC_RESPONSE,
+      engine: 'KittyBot Content Filter',
+      tier: 0
+    };
+  }
+
   const apiKey = (process.env.GROQ_API_KEY || '').trim();
   const modelName = process.env.GROQ_MODEL || 'qwen/qwen3.8-27b';
 
-  // Nếu không có API Key hoặc key rỗng/mặc định -> Tự động kích hoạt Tầng 2
   if (!apiKey || apiKey.startsWith('gsk_your') || apiKey === '') {
     console.log('[AI Coordinator] Chưa có Groq API Key hợp lệ. Chuyển hướng sang Tầng 2 (Rule-Based Engine Offline).');
     const offlineReply = await ruleBasedService.processRuleBased(userMessage);
@@ -152,7 +242,6 @@ async function processChatMessage(history = [], userMessage = '') {
     };
   }
 
-  // TẦNG 1: Groq Cloud API với Function Calling Loop (Hỗ trợ đa lượt)
   try {
     const groq = new Groq({ apiKey });
 
@@ -167,6 +256,7 @@ async function processChatMessage(history = [], userMessage = '') {
     let iterations = 0;
     const MAX_ITERATIONS = 3;
     let usedTools = false;
+    const collectedFunctionResults = [];
 
     while (iterations < MAX_ITERATIONS) {
       iterations++;
@@ -176,7 +266,7 @@ async function processChatMessage(history = [], userMessage = '') {
         messages: messages,
         tools: TOOLS,
         tool_choice: 'auto',
-        temperature: 0.5,
+        temperature: 0.3,
         max_tokens: 1024
       });
 
@@ -215,9 +305,9 @@ async function processChatMessage(history = [], userMessage = '') {
 
       // Nếu không có yêu cầu gọi thêm công cụ nào -> đã có câu trả lời hoàn chỉnh
       if (toolCallsToExecute.length === 0) {
-        let cleanReply = stripToolCallXml(responseMessage.content || '');
+        let cleanReply = sanitizeAiReply(responseMessage.content || '', collectedFunctionResults);
         if (!cleanReply) {
-          cleanReply = 'Dạ KittyBot đã tra cứu dữ liệu nhưng chưa tìm thấy dòng máy hoàn toàn trùng khớp với tiêu chí này. Bạn có thể cho KittyBot biết thêm về tầm giá hoặc thương hiệu yêu thích không ạ?';
+          cleanReply = 'Dạ KittyBot đã tra cứu dữ liệu nhưng chưa tìm thấy dòng máy hoàn toàn trùng khớp với tiêu chí này trong kho KittyPhone. Bạn có thể cho KittyBot biết thêm về tầm giá hoặc thương hiệu yêu thích không ạ?';
         }
 
         return {
@@ -236,32 +326,38 @@ async function processChatMessage(history = [], userMessage = '') {
       for (const tc of toolCallsToExecute) {
         console.log(`[AI Function Calling] Lượt ${iterations} - Thực thi hàm ${tc.name}:`, tc.args);
         const functionResult = await executeFunctionCall(tc.name, tc.args);
+        collectedFunctionResults.push(functionResult);
+
+        const resultString = JSON.stringify(functionResult);
 
         if (tc.isNative) {
           messages.push({
             tool_call_id: tc.id,
             role: 'tool',
             name: tc.name,
-            content: JSON.stringify(functionResult)
+            content: resultString
           });
         } else {
           messages.push({
             role: 'user',
-            content: `[Hệ thống CSDL KittyPhone trả lời hàm ${tc.name}]: ${JSON.stringify(functionResult)}`
+            content: `[Hệ thống CSDL KittyPhone trả lời hàm ${tc.name}]: ${resultString}\n\nLƯU Ý: Chỉ sử dụng DUY NHẤT dữ liệu trong kết quả trên để trả lời. KHÔNG thêm thông tin nào ngoài dữ liệu này.`
           });
         }
       }
     }
 
     // Nếu đạt giới hạn vòng lặp, yêu cầu AI tổng hợp câu trả lời cuối cùng
+    const FINAL_INSTRUCTION = `\n\nHÃY NHỚ: Chỉ trình bày thông tin sản phẩm từ kết quả tra cứu ở trên. KHÔNG bịa thêm sản phẩm, giá, hay thông số nào không có trong dữ liệu.`;
+    messages.push({ role: 'user', content: FINAL_INSTRUCTION });
+
     const finalResponse = await groq.chat.completions.create({
       model: modelName,
       messages: messages,
-      temperature: 0.6,
+      temperature: 0.3,
       max_tokens: 1024
     });
 
-    let finalCleanReply = stripToolCallXml(finalResponse.choices[0].message.content || '');
+    let finalCleanReply = sanitizeAiReply(finalResponse.choices[0].message.content || '', collectedFunctionResults);
     if (!finalCleanReply) {
       finalCleanReply = 'Dạ KittyBot đã cập nhật thông tin kho hàng và sản phẩm mới nhất. Bạn cần KittyBot tư vấn thêm chi tiết về dòng máy nào không ạ?';
     }
