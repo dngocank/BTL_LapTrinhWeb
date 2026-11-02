@@ -10,9 +10,20 @@
         <h4 class="fw-bold mb-1"><i class="bi bi-upc-scan text-danger me-2"></i>Quản Lý Mã Máy (IMEI & Serial Number)</h4>
         <span class="text-muted small">Định danh từng thiết bị vật lý để kích hoạt bảo hành điện tử chính hãng</span>
     </div>
-    <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addSerialModal">
-        <i class="bi bi-plus-lg me-1"></i>Thêm Mã IMEI/Serial Mới
-    </button>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="DownloadSerialTemplate" class="btn btn-outline-secondary rounded-pill btn-sm fw-semibold">
+            <i class="bi bi-download me-1"></i>Tải Mẫu CSV
+        </a>
+        <button type="button" class="btn btn-outline-success rounded-pill btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#importCsvModal">
+            <i class="bi bi-file-earmark-excel me-1"></i>Import Excel/CSV
+        </button>
+        <a asp-action="ExportSerialsCsv" class="btn btn-outline-primary rounded-pill btn-sm fw-semibold">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Xuất Excel/CSV
+        </a>
+        <button type="button" class="btn btn-danger rounded-pill px-3 btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addSerialModal">
+            <i class="bi bi-plus-lg me-1"></i>Thêm Thủ Công
+        </button>
+    </div>
 </div>
 
 <!-- Serials Table -->
@@ -114,6 +125,51 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Đóng</button>
                     <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Lưu Mã Máy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Import Batch IMEI / Serial via CSV (Feature 7) -->
+<div class="modal fade" id="importCsvModal" tabindex="-1" aria-labelledby="importCsvModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <form asp-action="ImportSerialsCsv" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold" id="importCsvModalLabel">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>Nhập Danh Sách IMEI Hàng Loạt
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-info small mb-3">
+                        <i class="bi bi-info-circle-fill me-1"></i>Hệ thống chấp nhận file <strong>.csv</strong> hoặc <strong>.txt</strong> chứa 3 cột: <code>ProductId, IMEI, SerialNumber</code>.
+                        <div class="mt-1">
+                            <a asp-action="DownloadSerialTemplate" class="fw-bold text-primary">Bấm vào đây để tải file CSV mẫu</a>.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chọn kho đích lưu máy <span class="text-danger">*</span></label>
+                        <select name="warehouseId" class="form-select">
+                            <option value="1">Kho chính TP.HCM (Main Warehouse)</option>
+                            <option value="2">Kho Hà Nội (North Warehouse)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chọn file CSV từ máy tính <span class="text-danger">*</span></label>
+                        <input type="file" name="csvFile" class="form-control" accept=".csv,text/csv,text/plain" required />
+                        <div class="form-text small">Dung lượng tối đa 5MB. Mỗi dòng tương ứng với 1 thiết bị.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-upload me-1"></i>Bắt Đầu Import
+                    </button>
                 </div>
             </form>
         </div>

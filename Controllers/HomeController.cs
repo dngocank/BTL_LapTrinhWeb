@@ -92,6 +92,9 @@ namespace BTL_PTTKYC.Controllers
             ViewBag.CustomerName = customerName;
             ViewBag.CustomerPhone = customerPhone;
 
+            // Gợi ý phụ kiện mua kèm (Smart Cross-selling)
+            ViewBag.Accessories = _productRepo.GetAllProducts(categoryId: 3).Take(4).ToList();
+
             // Related products in the same brand or category
             var related = _productRepo.GetAllProducts(brandId: product.BrandId)
                 .Where(p => p.ProductId != id)

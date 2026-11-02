@@ -209,6 +209,114 @@ namespace BTL_PTTKYC.Controllers
             return RedirectToAction("Serials");
         }
 
+        // 4.1. IMPORT BATCH SERIALS / IMEI VIA CSV/EXCEL (Feature 7)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ImportSerialsCsv(IFormFile csvFile, int warehouseId = 1)
+        {
+            if (csvFile == null || csvFile.Length == 0)
+            {
+                TempData["Error"] = "Vui lòng chọn file CSV chứa danh sách IMEI/Serial hợp lệ.";
+                return RedirectToAction("Serials");
+            }
+
+            int successCount = 0;
+            int errorCount = 0;
+
+            try
+            {
+                using var reader = new System.IO.StreamReader(csvFile.OpenReadStream(), System.Text.Encoding.UTF8);
+                string? line;
+                bool isHeader = true;
+
+                while ((line = await reader.ReadLineAsync()) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    if (isHeader)
+                    {
+                        isHeader = false;
+                        // Skip header row if it contains column names
+                        if (line.Contains("ProductId", StringComparison.OrdinalIgnoreCase) || 
+                            line.Contains("IMEI", StringComparison.OrdinalIgnoreCase) || 
+                            line.Contains("Mã", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+                    }
+
+                    var parts = line.Split(',', ';');
+                    if (parts.Length >= 2)
+                    {
+                        if (int.TryParse(parts[0].Trim(), out int prodId))
+                        {
+                            string imei = parts.Length > 1 ? parts[1].Trim() : "";
+                            string serial = parts.Length > 2 ? parts[2].Trim() : "";
+
+                            if (!string.IsNullOrEmpty(imei) || !string.IsNullOrEmpty(serial))
+                            {
+                                if (_warehouseRepo.AddSerial(prodId, imei, serial, warehouseId, out _))
+                                {
+                                    successCount++;
+                                }
+                                else
+                                {
+                                    errorCount++;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (successCount > 0)
+                {
+                    TempData["Success"] = $"Nhập hàng loạt thành công: {successCount} mã IMEI/Serial vào kho! {(errorCount > 0 ? $"({errorCount} mã bị trùng hoặc lỗi)" : "")}";
+                }
+                else
+                {
+                    TempData["Error"] = $"Không nhập được mã nào. Vui lòng kiểm tra định dạng file CSV mẫu.";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Lỗi khi xử lý file CSV: " + ex.Message;
+            }
+
+            return RedirectToAction("Serials");
+        }
+
+        // 4.2. EXPORT SERIALS / IMEI TO CSV (Feature 7)
+        [HttpGet]
+        public IActionResult ExportSerialsCsv()
+        {
+            var serials = _warehouseRepo.GetSerials();
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("SerialId,ProductId,Tên Sản Phẩm,IMEI,Số Serial,Kho Hàng,Trạng Thái");
+
+            foreach (var s in serials)
+            {
+                sb.AppendLine($"{s.SerialId},{s.ProductId},\"{s.ProductName}\",{s.ImeiNumber},{s.SerialNumber},\"{s.WarehouseName}\",{s.Status}");
+            }
+
+            var preamble = System.Text.Encoding.UTF8.GetPreamble();
+            var bytes = preamble.Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv; charset=utf-8", $"DanhSach_IMEI_KittyPhone_{DateTime.Now:yyyyMMdd_HHmm}.csv");
+        }
+
+        // 4.3. DOWNLOAD CSV TEMPLATE (Feature 7)
+        [HttpGet]
+        public IActionResult DownloadSerialTemplate()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("ProductId,IMEI,SerialNumber");
+            sb.AppendLine("1,356789123456781,APL-IP16-DEMO01");
+            sb.AppendLine("1,356789123456782,APL-IP16-DEMO02");
+            sb.AppendLine("13,356789123456783,APL-IP16PM-DEMO03");
+
+            var preamble = System.Text.Encoding.UTF8.GetPreamble();
+            var bytes = preamble.Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv; charset=utf-8", "Mau_Import_IMEI_KittyPhone.csv");
+        }
+
         // 5. STOCK MOVEMENTS HISTORY
         public IActionResult Movements()
         {

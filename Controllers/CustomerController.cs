@@ -390,6 +390,24 @@ namespace BTL_PTTKYC.Controllers
             return View(quote);
         }
 
+        [HttpGet]
+        public IActionResult InvoicePdf(int id)
+        {
+            var order = _orderRepo.GetOrderById(id);
+            if (order == null) return NotFound("Không tìm thấy đơn hàng");
+
+            if (User.IsInRole("Customer"))
+            {
+                var customerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(customerIdClaim, out int cid) && order.CustomerId != cid)
+                {
+                    return Forbid();
+                }
+            }
+
+            return View(order);
+        }
+
         [Authorize(Roles = "Customer")]
         [HttpGet]
         public IActionResult Orders()

@@ -1,0 +1,123 @@
+@model BTL_PTTKYC.Models.Verify2FAViewModel
+@{
+    ViewData["Title"] = "Xác Thực 2 Bước (2FA) - KittyPhone Security";
+    Layout = "_Layout";
+    string demoOtp = ViewBag.DemoOtp as string ?? "";
+    string username = ViewBag.Username as string ?? "Admin";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Header -->
+                <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, #0e2254 0%, #0284c7 100%);">
+                    <div class="d-inline-flex p-3 rounded-circle bg-white bg-opacity-15 mb-3 shadow-sm">
+                        <i class="bi bi-shield-lock-fill fs-1 text-warning"></i>
+                    </div>
+                    <h4 class="fw-bold mb-1">Xác Thực Hai Lớp (2FA)</h4>
+                    <span class="text-white-50 small">Bảo mật cấp cao dành riêng cho Quản Trị Viên</span>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <!-- Demo OTP Banner (Dành cho buổi thuyết trình/kiểm thử) -->
+                    @if (!string.IsNullOrEmpty(demoOtp))
+                    {
+                        <div class="alert alert-warning border-warning border-opacity-50 text-dark small rounded-3 mb-4 shadow-sm">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-key-fill text-warning fs-5"></i>
+                                <span class="fw-bold">Mã OTP Mô Phỏng 2FA (Demo):</span>
+                            </div>
+                            <div class="fs-4 fw-bold font-monospace text-center py-1 bg-white rounded border border-warning text-danger letter-spacing-2">
+                                @demoOtp
+                            </div>
+                            <div class="text-muted mt-1" style="font-size: 11px;">
+                                *Trong thực tế mã này được gửi qua Email/SMS của tài khoản <strong>@username</strong>.
+                            </div>
+                        </div>
+                    }
+
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty] != null)
+                    {
+                        <div class="alert alert-danger py-2 small mb-4 rounded-3">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            @ViewData.ModelState[string.Empty]?.Errors.FirstOrDefault()?.ErrorMessage
+                        </div>
+                    }
+
+                    <p class="text-muted small text-center mb-4">
+                        Vui lòng nhập mã bảo mật gồm <strong>6 chữ số</strong> để hoàn tất đăng nhập vào phân hệ quản trị.
+                    </p>
+
+                    <form asp-action="Verify2FA" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark text-center d-block">MÃ XÁC THỰC OTP</label>
+                            <input asp-for="OtpCode" 
+                                   class="form-control form-control-lg text-center font-monospace fs-3 fw-bold rounded-3 letter-spacing-3 shadow-sm" 
+                                   placeholder="000000" 
+                                   maxlength="6" 
+                                   autofocus 
+                                   required 
+                                   autocomplete="one-time-code" />
+                            <span asp-validation-for="OtpCode" class="text-danger small mt-1 d-block text-center"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4 text-muted small">
+                            <div><i class="bi bi-clock-history me-1"></i>Hiệu lực mã: <strong id="otpTimer" class="text-danger">04:59</strong></div>
+                            <a href="javascript:location.reload()" class="text-decoration-none fw-semibold">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Gửi lại mã
+                            </a>
+                        </div>
+
+                        <button type="submit" class="btn btn-danger w-100 py-3 rounded-pill fw-bold shadow" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border: none;">
+                            <i class="bi bi-check2-circle me-1"></i>XÁC NHẬN & VÀO DASHBOARD
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 pt-3 border-top">
+                        <a asp-action="Login" class="text-muted small text-decoration-none">
+                            <i class="bi bi-arrow-left me-1"></i>Quay lại màn hình đăng nhập
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .letter-spacing-2 {
+        letter-spacing: 4px;
+    }
+    .letter-spacing-3 {
+        letter-spacing: 8px;
+    }
+</style>
+
+@section Scripts {
+<script>
+    (function () {
+        var duration = 5 * 60;
+        var timerDisplay = document.getElementById('otpTimer');
+        var timer = setInterval(function () {
+            var minutes = parseInt(duration / 60, 10);
+            var seconds = parseInt(duration % 60, 10);
+
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            if (timerDisplay) {
+                timerDisplay.textContent = minutes + ":" + seconds;
+            }
+
+            if (--duration < 0) {
+                clearInterval(timer);
+                if (timerDisplay) timerDisplay.textContent = "Hết hạn";
+            }
+        }, 1000);
+    })();
+</script>
+}

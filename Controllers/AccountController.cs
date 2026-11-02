@@ -47,6 +47,21 @@ namespace BTL_PTTKYC.Controllers
                 return View(model);
             }
 
+            // Kích hoạt 2FA (Xác thực 2 bước) cho Quản trị viên (Feature 9)
+            if (account.Role == "Admin")
+            {
+                var otp = Random.Shared.Next(100000, 999999).ToString();
+                HttpContext.Session.SetString("Admin2FA_Otp", otp);
+                HttpContext.Session.SetString("Admin2FA_AccountId", account.AccountId.ToString());
+                HttpContext.Session.SetString("Admin2FA_Username", account.Username);
+                HttpContext.Session.SetString("Admin2FA_EmployeeName", account.EmployeeName);
+                HttpContext.Session.SetString("Admin2FA_Role", account.Role);
+                HttpContext.Session.SetString("Admin2FA_ReturnUrl", model.ReturnUrl ?? "");
+
+                TempData["DemoOtp"] = otp;
+                return RedirectToAction("Verify2FA");
+            }
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, account.AccountId.ToString()),
@@ -90,6 +105,77 @@ namespace BTL_PTTKYC.Controllers
             }
 
             return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public IActionResult Verify2FA()
+        {
+            var otp = HttpContext.Session.GetString("Admin2FA_Otp");
+            var username = HttpContext.Session.GetString("Admin2FA_Username");
+            if (string.IsNullOrEmpty(otp) || string.IsNullOrEmpty(username))
+            {
+                return RedirectToAction("Login");
+            }
+
+            ViewBag.Username = username;
+            ViewBag.DemoOtp = TempData["DemoOtp"] ?? otp;
+            return View(new Verify2FAViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Verify2FA(Verify2FAViewModel model)
+        {
+            var savedOtp = HttpContext.Session.GetString("Admin2FA_Otp");
+            var accountIdStr = HttpContext.Session.GetString("Admin2FA_AccountId");
+            var username = HttpContext.Session.GetString("Admin2FA_Username");
+            var employeeName = HttpContext.Session.GetString("Admin2FA_EmployeeName");
+            var role = HttpContext.Session.GetString("Admin2FA_Role");
+            var returnUrl = HttpContext.Session.GetString("Admin2FA_ReturnUrl");
+
+            if (string.IsNullOrEmpty(savedOtp) || string.IsNullOrEmpty(username))
+            {
+                TempData["Error"] = "Phiên xác thực 2FA đã hết hạn. Vui lòng đăng nhập lại.";
+                return RedirectToAction("Login");
+            }
+
+            if (model.OtpCode?.Trim() != savedOtp)
+            {
+                ModelState.AddModelError(string.Empty, "Mã xác thực 2FA không chính xác. Vui lòng kiểm tra lại!");
+                ViewBag.Username = username;
+                ViewBag.DemoOtp = savedOtp;
+                return View(model);
+            }
+
+            // Xóa session 2FA sau khi xác thực thành công
+            HttpContext.Session.Remove("Admin2FA_Otp");
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, accountIdStr ?? "0"),
+                new Claim(ClaimTypes.Name, username),
+                new Claim("EmployeeName", employeeName ?? ""),
+                new Claim(ClaimTypes.Role, role ?? "Admin")
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+            };
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            return RedirectToAction("Index", "Admin");
         }
 
         [HttpPost]

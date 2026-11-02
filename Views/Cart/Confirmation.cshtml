@@ -251,6 +251,9 @@
 
             <!-- Actions -->
             <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a asp-controller="Customer" asp-action="InvoicePdf" asp-route-id="@Model.Invoice.InvoiceId" target="_blank" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Xuất / Tải Hóa Đơn VAT (PDF)
+                </a>
                 <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
                     <i class="bi bi-house me-1"></i>Tiếp tục mua hàng
                 </a>

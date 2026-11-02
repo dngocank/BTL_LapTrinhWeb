@@ -15,6 +15,9 @@
         <a asp-controller="Technician" asp-action="Index" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold">
             <i class="bi bi-tools me-1"></i>Quản lý Bảo hành & Kỹ thuật
         </a>
+        <a asp-action="ExportRevenueCsv" class="btn btn-outline-success btn-sm rounded-pill fw-semibold">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Xuất Excel/CSV Doanh Thu
+        </a>
         <a asp-action="Accounts" class="btn btn-outline-dark btn-sm rounded-pill">
             <i class="bi bi-people me-1"></i>Quản lý tài khoản
         </a>
@@ -71,6 +74,45 @@
             <div>
                 <span class="text-muted small d-block">Tài khoản nhân sự</span>
                 <h4 class="fw-bold text-dark mb-0">@ViewBag.TotalAccounts user</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Chart.js Analytics (Feature 6) -->
+<div class="row g-4 mb-4">
+    <!-- Left: Revenue Growth Chart -->
+    <div class="col-lg-8">
+        <div class="bg-white rounded-3 border p-4 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h6 class="fw-bold text-dark mb-1"><i class="bi bi-graph-up-arrow text-danger me-2"></i>Xu Hướng Doanh Thu 6 Tháng Gần Nhất</h6>
+                    <span class="text-muted small">Biểu đồ trực quan hóa dữ liệu bán hàng thực tế</span>
+                </div>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill small">
+                    <i class="bi bi-lightning-charge me-1"></i>Real-time Data
+                </span>
+            </div>
+            <div style="height: 280px; position: relative;">
+                <canvas id="revenueLineChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Brand Breakdown Doughnut Chart -->
+    <div class="col-lg-4">
+        <div class="bg-white rounded-3 border p-4 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h6 class="fw-bold text-dark mb-1"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Cơ Cấu Sản Phẩm</h6>
+                    <span class="text-muted small">Tỷ lệ theo thương hiệu</span>
+                </div>
+            </div>
+            <div style="height: 240px; position: relative;">
+                <canvas id="brandDoughnutChart"></canvas>
+            </div>
+            <div class="text-center text-muted small mt-2" style="font-size: 11px;">
+                Cập nhật tự động theo danh mục sản phẩm trong kho
             </div>
         </div>
     </div>
@@ -177,3 +219,102 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        // 1. Revenue Line Chart
+        var ctxLine = document.getElementById('revenueLineChart');
+        if (ctxLine) {
+            var months = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ChartMonths ?? new List<string>()));
+            var revData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ChartMonthlyRevenue ?? new List<decimal>()));
+
+            new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Doanh thu (VNĐ)',
+                        data: revData,
+                        borderColor: '#dc2626',
+                        backgroundColor: 'rgba(220, 38, 38, 0.08)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#dc2626',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + Number(context.raw).toLocaleString('vi-VN') + ' đ';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value / 1000000).toFixed(0) + ' Tr';
+                                }
+                            },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Brand Doughnut Chart
+        var ctxDoughnut = document.getElementById('brandDoughnutChart');
+        if (ctxDoughnut) {
+            var brandLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ChartBrandLabels ?? new List<string>()));
+            var brandCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ChartBrandCounts ?? new List<int>()));
+
+            new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: brandLabels,
+                    datasets: [{
+                        data: brandCounts,
+                        backgroundColor: [
+                            '#0284c7', // Sky Blue
+                            '#dc2626', // Red
+                            '#16a34a', // Green
+                            '#f59e0b', // Amber
+                            '#8b5cf6'  // Purple
+                        ],
+                        borderWidth: 2,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, font: { size: 11 } }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+    });
+</script>
+}

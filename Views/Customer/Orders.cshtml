@@ -94,9 +94,14 @@
                                     }
                                 </td>
                                 <td class="text-center">
-                                    <a asp-controller="Cart" asp-action="Confirmation" asp-route-id="@order.InvoiceId" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                                        Chi tiết
-                                    </a>
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <a asp-controller="Cart" asp-action="Confirmation" asp-route-id="@order.InvoiceId" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                            Chi tiết
+                                        </a>
+                                        <a asp-controller="Customer" asp-action="InvoicePdf" asp-route-id="@order.InvoiceId" target="_blank" class="btn btn-outline-danger btn-sm rounded-pill px-2" title="Tải hóa đơn VAT & Phiếu bảo hành PDF">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         }

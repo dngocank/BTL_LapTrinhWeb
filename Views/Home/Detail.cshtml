@@ -176,10 +176,49 @@
                 </div>
 
                 <button type="button" 
-                        class="btn btn-outline-primary mb-4 w-100 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" 
+                        class="btn btn-outline-primary mb-3 w-100 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" 
                         onclick="window.kittyOpenChat('Tư vấn giúp mình xem chiếc @Model.ProductName này có ưu/nhược điểm gì, chơi game tốt không và cửa hàng hiện còn bao nhiêu máy trong kho?')">
                     ⚡ Hỏi KittyBot về máy này
                 </button>
+
+                @if (ViewBag.Accessories is List<BTL_PTTKYC.Models.ProductViewModel> accessories && accessories.Any())
+                {
+                    <div class="card border-danger border-opacity-25 rounded-3 mb-4 shadow-sm" style="background: #fffcfc;">
+                        <div class="card-header bg-danger bg-opacity-10 py-2 d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-danger small"><i class="bi bi-gift-fill me-1"></i>COMBO PHỤ KIỆN MUA KÈM - GIẢM THÊM 10%</span>
+                            <span class="badge bg-danger rounded-pill">Ưu đãi độc quyền</span>
+                        </div>
+                        <div class="card-body p-3">
+                            <p class="text-muted small mb-2">Chọn thêm phụ kiện chính hãng để áp dụng giảm giá trực tiếp vào giỏ hàng:</p>
+                            <div class="vstack gap-2" id="crossSellItems">
+                                @foreach (var acc in accessories)
+                                {
+                                    decimal discountedPrice = Math.Round(acc.SellingPrice * 0.9m, 0);
+                                    <div class="d-flex align-items-center justify-content-between p-2 rounded border bg-white">
+                                        <div class="form-check d-flex align-items-center gap-2 mb-0">
+                                            <input class="form-check-input cross-sell-chk" type="checkbox" value="@acc.ProductId" data-price="@discountedPrice" id="acc_@acc.ProductId">
+                                            <label class="form-check-label small" for="acc_@acc.ProductId">
+                                                <span class="fw-semibold text-dark">@acc.ProductName</span>
+                                                <div class="text-muted" style="font-size: 11px;">
+                                                    <span class="text-danger fw-bold">@discountedPrice.ToString("N0")đ</span>
+                                                    <span class="text-decoration-line-through ms-1 text-muted">@acc.SellingPrice.ToString("N0")đ</span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                <div>
+                                    <span class="small text-muted">Đã chọn: <strong id="comboSelectedCount" class="text-danger">0</strong> món</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger fw-bold rounded-pill px-3 shadow-sm" id="btnBuyCombo" onclick="addSelectedCombo()">
+                                    <i class="bi bi-cart-plus me-1"></i>Thêm Combo Vào Giỏ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
             }
             else
             {
@@ -518,6 +557,36 @@
                     alert(res.message);
                 }
             }
+        });
+    }
+
+    $(document).on('change', '.cross-sell-chk', function() {
+        const count = $('.cross-sell-chk:checked').length;
+        $('#comboSelectedCount').text(count);
+    });
+
+    function addSelectedCombo() {
+        const checked = $('.cross-sell-chk:checked');
+        if (checked.length === 0) {
+            alert('Vui lòng tích chọn ít nhất 1 phụ kiện mua kèm!');
+            return;
+        }
+        let completed = 0;
+        checked.each(function() {
+            const pid = $(this).val();
+            $.post('/Cart/Add', { productId: pid, quantity: 1 }, function(res) {
+                completed++;
+                if (completed === checked.length) {
+                    if (window.updateCartBadges && res.count) {
+                        window.updateCartBadges(res.count);
+                    }
+                    if (window.showCartToast) {
+                        window.showCartToast(`Đã thêm ${completed} phụ kiện mua kèm vào giỏ hàng!`, true);
+                    } else {
+                        alert(`Đã thêm ${completed} phụ kiện mua kèm vào giỏ hàng!`);
+                    }
+                }
+            });
         });
     }
 </script>

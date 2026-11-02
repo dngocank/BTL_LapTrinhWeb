@@ -70,4 +70,13 @@ namespace BTL_PTTKYC.Models
         public string? Phone { get; set; }
         public bool HasAccount { get; set; }
     }
+
+    public class Verify2FAViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập mã xác thực OTP 6 số")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã OTP gồm đúng 6 chữ số")]
+        public string OtpCode { get; set; } = string.Empty;
+
+        public string? ReturnUrl { get; set; }
+    }
 }

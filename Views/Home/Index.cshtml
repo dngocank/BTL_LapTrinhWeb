@@ -763,6 +763,143 @@
     }
 
     <!-- ========================================================
+         2.6. SECTION FLASH SALE GIỜ VÀNG (COUNTDOWN TIMER)
+         ======================================================== -->
+    <section class="mb-4 rounded-4 shadow-sm overflow-hidden border border-danger border-opacity-25" style="background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #ea580c 100%);">
+        <div class="p-3 p-md-4 text-white">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fs-3"><i class="bi bi-lightning-charge-fill text-warning"></i></span>
+                    <div>
+                        <h4 class="fw-bold mb-0 text-white text-uppercase" style="letter-spacing: 0.5px;">🔥 FLASH SALE GIỜ VÀNG</h4>
+                        <span class="text-white-50 small">Số lượng có hạn - Giảm giá chớp nhoáng duy nhất hôm nay</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 bg-black bg-opacity-25 px-3 py-2 rounded-pill border border-white border-opacity-25">
+                    <span class="small text-white-50 fw-semibold text-uppercase me-1"><i class="bi bi-stopwatch text-warning me-1"></i>Kết thúc trong:</span>
+                    <div class="d-flex gap-1 fw-bold fs-6" id="flashSaleTimer">
+                        <span class="badge bg-dark text-white rounded px-2 py-1 timer-hours">02</span> :
+                        <span class="badge bg-dark text-white rounded px-2 py-1 timer-minutes">45</span> :
+                        <span class="badge bg-dark text-white rounded px-2 py-1 timer-seconds">30</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flash Sale Items -->
+            <div class="row row-cols-2 row-cols-md-4 g-3">
+                @foreach (var item in Model.Where(p => p.Quantity > 0).Take(4))
+                {
+                    decimal flashPrice = Math.Round(item.SellingPrice * 0.82m, 0);
+                    <div class="col">
+                        <div class="bg-white rounded-3 p-3 h-100 text-dark d-flex flex-column justify-content-between position-relative shadow-sm">
+                            <span class="badge bg-danger position-absolute top-0 start-0 m-2 rounded-pill px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                <i class="bi bi-fire me-1"></i>-18% GIẢM SỐC
+                            </span>
+                            <div class="text-center pt-3 mb-2">
+                                <a asp-action="Detail" asp-route-id="@item.ProductId" class="text-decoration-none">
+                                    <img src="@(item.ImageUrl ?? "/images/placeholder-phone.svg")" alt="@item.ProductName" class="img-fluid" style="max-height: 130px; object-fit: contain;" />
+                                </a>
+                            </div>
+                            <div>
+                                <a asp-action="Detail" asp-route-id="@item.ProductId" class="text-decoration-none text-dark">
+                                    <div class="fw-bold small text-truncate-2 mb-1" style="height: 38px; line-height: 1.3;" title="@item.ProductName">@item.ProductName</div>
+                                </a>
+                                <div class="d-flex align-items-baseline gap-2 mb-2">
+                                    <span class="fw-bold text-danger fs-6">@flashPrice.ToString("N0")đ</span>
+                                    <span class="text-muted small text-decoration-line-through" style="font-size: 11px;">@item.SellingPrice.ToString("N0")đ</span>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar bg-danger progress-bar-striped progress-bar-animated" style="width: 78%;"></div>
+                                    </div>
+                                    <span class="text-muted" style="font-size: 10px;">Đã bán 78/100 máy</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger w-100 rounded-pill fw-bold shadow-sm" onclick="addToCart(@item.ProductId)">
+                                    <i class="bi bi-cart-plus me-1"></i>Săn Deal Ngay
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================
+         2.7. SECTION GÓC BÌNH CHỌN CÔNG NGHỆ (POLL WIDGET)
+         ======================================================== -->
+    <section class="mb-4 p-3 p-md-4 rounded-4 shadow-sm bg-white border" id="techPollSection">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-5">
+                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-bold mb-2">
+                    <i class="bi bi-bar-chart-fill me-1"></i>BÌNH CHỌN CỘNG ĐỒNG
+                </span>
+                <h4 class="fw-bold text-dark mb-2">Đại Chiến Flagship: Bạn Chọn Siêu Phẩm Nào?</h4>
+                <p class="text-muted small mb-3">
+                    Bình chọn cho mẫu điện thoại bạn yêu thích nhất để nhận ngay Voucher giảm giá 500.000đ khi mua hàng tại KittyPhone!
+                </p>
+                <div class="d-flex align-items-center gap-3 text-muted small">
+                    <div><i class="bi bi-people-fill text-primary me-1"></i><strong id="pollTotalVotes">1,482</strong> lượt tham gia</div>
+                    <div><i class="bi bi-shield-check text-success me-1"></i>Bình chọn minh bạch</div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="vstack gap-2" id="pollOptionsList">
+                    <!-- Option 1 -->
+                    <div class="poll-card p-3 rounded-3 border position-relative overflow-hidden" onclick="castPollVote(1)" style="cursor: pointer;">
+                        <div class="poll-bar bg-primary bg-opacity-10 position-absolute top-0 start-0 h-100" id="pollBar1" style="width: 54%; transition: width 0.6s ease; z-index: 1;"></div>
+                        <div class="position-relative d-flex justify-content-between align-items-center" style="z-index: 2;">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fs-5">📱</span>
+                                <div>
+                                    <strong class="text-dark d-block">iPhone 16 Pro Max</strong>
+                                    <span class="text-muted small">Khung Titanium, Chip A18 Pro, Camera 48MP Fusion</span>
+                                </div>
+                            </div>
+                            <span class="fw-bold text-primary fs-6" id="pollPercent1">54%</span>
+                        </div>
+                    </div>
+
+                    <!-- Option 2 -->
+                    <div class="poll-card p-3 rounded-3 border position-relative overflow-hidden" onclick="castPollVote(2)" style="cursor: pointer;">
+                        <div class="poll-bar bg-success bg-opacity-10 position-absolute top-0 start-0 h-100" id="pollBar2" style="width: 32%; transition: width 0.6s ease; z-index: 1;"></div>
+                        <div class="position-relative d-flex justify-content-between align-items-center" style="z-index: 2;">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fs-5">⚡</span>
+                                <div>
+                                    <strong class="text-dark d-block">Samsung Galaxy S25 Ultra</strong>
+                                    <span class="text-muted small">Snapdragon 8 Elite, Trợ lý Galaxy AI, S-Pen đa năng</span>
+                                </div>
+                            </div>
+                            <span class="fw-bold text-success fs-6" id="pollPercent2">32%</span>
+                        </div>
+                    </div>
+
+                    <!-- Option 3 -->
+                    <div class="poll-card p-3 rounded-3 border position-relative overflow-hidden" onclick="castPollVote(3)" style="cursor: pointer;">
+                        <div class="poll-bar bg-danger bg-opacity-10 position-absolute top-0 start-0 h-100" id="pollBar3" style="width: 14%; transition: width 0.6s ease; z-index: 1;"></div>
+                        <div class="position-relative d-flex justify-content-between align-items-center" style="z-index: 2;">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fs-5">🚀</span>
+                                <div>
+                                    <strong class="text-dark d-block">Xiaomi 15 Ultra / Flagship Khác</strong>
+                                    <span class="text-muted small">Ống kính Leica Summilux, Sạc siêu tốc 90W</span>
+                                </div>
+                            </div>
+                            <span class="fw-bold text-danger fs-6" id="pollPercent3">14%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3" id="pollAlertMessage" style="display: none;">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small">
+                        <i class="bi bi-check-circle-fill me-1"></i>Cảm ơn bạn đã bình chọn! Mã Voucher giảm 500k của bạn là: <strong>FLAGSHIP500</strong>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================
          3. SECTION "DANH MỤC THIẾT BỊ CÔNG NGHỆ CHÍNH HÃNG"
          ======================================================== -->
     <div id="productCatalog" class="pt-2">
@@ -1674,5 +1811,95 @@
         if (elDeduct) elDeduct.textContent = fmt(totalDeduct);
         if (elPay) elPay.textContent = fmt(payMore);
     }
+
+    // 8. Flash Sale Countdown Timer (Feature 4)
+    (function initFlashSaleTimer() {
+        var timerEl = document.getElementById('flashSaleTimer');
+        if (!timerEl) return;
+
+        var endTime = new Date();
+        endTime.setHours(23, 59, 59, 999);
+
+        function tick() {
+            var now = new Date().getTime();
+            var diff = endTime.getTime() - now;
+            if (diff < 0) diff = 0;
+
+            var hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            var minutes = Math.floor((diff / (1000 * 60)) % 60);
+            var seconds = Math.floor((diff / 1000) % 60);
+
+            var hEl = timerEl.querySelector('.timer-hours');
+            var mEl = timerEl.querySelector('.timer-minutes');
+            var sEl = timerEl.querySelector('.timer-seconds');
+
+            if (hEl) hEl.textContent = String(hours).padStart(2, '0');
+            if (mEl) mEl.textContent = String(minutes).padStart(2, '0');
+            if (sEl) sEl.textContent = String(seconds).padStart(2, '0');
+        }
+
+        tick();
+        setInterval(tick, 1000);
+    })();
+
+    // 9. Community Tech Poll Widget (Feature 8)
+    var pollState = {
+        votes: [800, 474, 208],
+        hasVoted: false
+    };
+
+    function initPollState() {
+        var saved = localStorage.getItem('kitty_tech_poll');
+        if (saved) {
+            pollState.hasVoted = true;
+            $('#pollAlertMessage').show();
+            highlightVotedOption(saved);
+        }
+    }
+
+    function castPollVote(optId) {
+        if (pollState.hasVoted) {
+            alert('Bạn đã tham gia bình chọn rồi! Mã voucher của bạn là: FLAGSHIP500');
+            return;
+        }
+
+        pollState.votes[optId - 1]++;
+        pollState.hasVoted = true;
+        localStorage.setItem('kitty_tech_poll', optId);
+
+        var total = pollState.votes[0] + pollState.votes[1] + pollState.votes[2];
+        var p1 = Math.round((pollState.votes[0] / total) * 100);
+        var p2 = Math.round((pollState.votes[1] / total) * 100);
+        var p3 = 100 - p1 - p2;
+
+        $('#pollBar1').css('width', p1 + '%');
+        $('#pollPercent1').text(p1 + '%');
+
+        $('#pollBar2').css('width', p2 + '%');
+        $('#pollPercent2').text(p2 + '%');
+
+        $('#pollBar3').css('width', p3 + '%');
+        $('#pollPercent3').text(p3 + '%');
+
+        $('#pollTotalVotes').text(total.toLocaleString('vi-VN'));
+        $('#pollAlertMessage').slideDown();
+        highlightVotedOption(optId);
+
+        if (window.showCartToast) {
+            window.showCartToast('Đã ghi nhận bình chọn thành công! Bạn nhận được Voucher 500k', true);
+        }
+    }
+
+    function highlightVotedOption(optId) {
+        $('.poll-card').css('border-color', '#e2e8f0');
+        $('.poll-card:nth-child(' + optId + ')').css({
+            'border-color': '#0284c7',
+            'box-shadow': '0 4px 12px rgba(2, 132, 199, 0.15)'
+        });
+    }
+
+    $(document).ready(function() {
+        initPollState();
+    });
 </script>
 }
