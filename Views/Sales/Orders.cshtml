@@ -27,6 +27,12 @@
                 <a asp-action="Orders" asp-route-status="Paid" class="btn btn-sm rounded-pill px-3 @(currentStatus == "Paid" ? "btn-success shadow-sm" : "btn-light border text-dark")">
                     <i class="bi bi-check-circle me-1 text-success"></i>Đã thanh toán
                 </a>
+                <a asp-action="Orders" asp-route-status="Shipping" class="btn btn-sm rounded-pill px-3 @(currentStatus == "Shipping" ? "btn-info text-dark fw-bold shadow-sm" : "btn-light border text-dark")">
+                    <i class="bi bi-truck me-1 text-info"></i>Đang giao hàng
+                </a>
+                <a asp-action="Orders" asp-route-status="Delivered" class="btn btn-sm rounded-pill px-3 @(currentStatus == "Delivered" ? "btn-primary shadow-sm" : "btn-light border text-dark")">
+                    <i class="bi bi-patch-check-fill me-1 text-primary"></i>Đã giao hàng
+                </a>
                 <a asp-action="Orders" asp-route-status="CancelRequested" class="btn btn-sm rounded-pill px-3 @(currentStatus == "CancelRequested" ? "btn-warning text-dark fw-bold shadow-sm" : "btn-light border text-dark")">
                     <i class="bi bi-exclamation-diamond me-1 text-warning"></i>Yêu cầu hủy
                 </a>
@@ -117,7 +123,15 @@
                                 }
                             </td>
                             <td>
-                                @if (order.Status == "Paid")
+                                @if (order.Status == "Delivered")
+                                {
+                                    <span class="badge bg-primary"><i class="bi bi-patch-check-fill me-1"></i>Đã giao thành công</span>
+                                }
+                                else if (order.Status == "Shipping")
+                                {
+                                    <span class="badge bg-info text-dark"><i class="bi bi-truck me-1"></i>Đang giao hàng</span>
+                                }
+                                else if (order.Status == "Paid")
                                 {
                                     <span class="badge bg-success"><i class="bi bi-check-all me-1"></i>Đã thanh toán đủ</span>
                                 }

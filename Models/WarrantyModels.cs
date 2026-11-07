@@ -252,8 +252,10 @@ namespace BTL_PTTKYC.Models
         public string? SerialNumber { get; set; }
         public int ProductId { get; set; }
         public string ProductName { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
         public string BrandName { get; set; } = string.Empty;
         public int InvoiceId { get; set; }
+        public DateTime PurchaseDate { get; set; }
         public string CustomerName { get; set; } = string.Empty;
         public string CustomerPhone { get; set; } = string.Empty;
         public DateTime WarrantyStart { get; set; }
@@ -263,6 +265,8 @@ namespace BTL_PTTKYC.Models
 
         public bool IsExpired => WarrantyEnd < DateTime.Today;
         public int DaysLeft => IsExpired ? 0 : (WarrantyEnd - DateTime.Today).Days;
+        public string StatusBadgeText => IsExpired ? "Hết hạn bảo hành" : $"Còn hạn ({DaysLeft} ngày)";
+        public string StatusBadgeClass => IsExpired ? "badge bg-secondary" : "badge bg-success";
     }
 
     public class TechnicianWorkbenchViewModel

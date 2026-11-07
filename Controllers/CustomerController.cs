@@ -104,6 +104,9 @@ namespace BTL_PTTKYC.Controllers
             {
                 if (customer != null)
                 {
+                    // Dọn dẹp và làm mới Session giỏ hàng để tránh thừa hưởng sản phẩm từ phiên ẩn danh trước đó
+                    HttpContext.Session.Remove("KittyPhone_Cart");
+
                     // Tự động đăng nhập cho khách hàng
                     var claims = new List<Claim>
                     {
@@ -188,6 +191,9 @@ namespace BTL_PTTKYC.Controllers
                 ModelState.AddModelError(string.Empty, errorMessage);
                 return View(model);
             }
+
+            // Dọn dẹp và làm mới Session giỏ hàng để tài khoản mới đăng nhập không thừa hưởng sản phẩm từ phiên trước
+            HttpContext.Session.Remove("KittyPhone_Cart");
 
             var claims = new List<Claim>
             {
@@ -286,7 +292,9 @@ namespace BTL_PTTKYC.Controllers
             if (customer == null) return RedirectToAction("Login");
 
             var tickets = _warrantyRepo.GetTicketsByCustomerId(customerId, customer.Phone);
+            var warrantedDevices = _warrantyRepo.GetWarrantedDevicesByCustomerId(customerId);
             ViewBag.Customer = customer;
+            ViewBag.WarrantedDevices = warrantedDevices;
             return View(tickets);
         }
 
@@ -324,7 +332,7 @@ namespace BTL_PTTKYC.Controllers
         [Authorize(Roles = "Customer")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult RegisterHomeWarranty(HomeWarrantyRegisterViewModel model)
+        public IActionResult RegisterHomeWarranty([Bind(Prefix = "HomeWarrantyForm")] HomeWarrantyRegisterViewModel model)
         {
             var customerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(customerIdClaim, out int customerId))
@@ -334,10 +342,14 @@ namespace BTL_PTTKYC.Controllers
 
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Vui lòng kiểm tra lại các trường thông tin đăng ký bảo hành.";
+                var errors = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).Where(m => !string.IsNullOrEmpty(m)));
+                TempData["ErrorMessage"] = string.IsNullOrEmpty(errors)
+                    ? "Vui lòng kiểm tra lại các trường thông tin đăng ký bảo hành."
+                    : $"Thông tin đăng ký chưa hợp lệ: {errors}";
                 TempData["ActiveTab"] = "homewarranty-pane";
                 return RedirectToAction("Profile");
             }
+
 
             if (_warrantyRepo.CreateHomeWarrantyTicket(model, out string ticketCode, out int newTicketId, out string errorMessage))
             {
@@ -426,6 +438,9 @@ namespace BTL_PTTKYC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            // Dọn dẹp sạch Session giỏ hàng và toàn bộ dữ liệu phiên làm việc của khách hàng
+            HttpContext.Session.Remove("KittyPhone_Cart");
+            HttpContext.Session.Clear();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }

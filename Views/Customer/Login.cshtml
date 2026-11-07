@@ -1,6 +1,7 @@
 @model BTL_PTTKYC.Models.CustomerLoginViewModel
 @{
     ViewData["Title"] = "Đăng Nhập Khách Hàng | KittyPhone";
+    ViewData["IsCustomerAuthPage"] = true;
 }
 
 <div class="auth-wrapper py-5">
@@ -8,7 +9,7 @@
         <div class="auth-card">
             <!-- Header -->
             <div class="auth-card-header">
-                <div class="d-inline-flex p-3 rounded-circle bg-white text-primary mb-3 shadow-sm" style="width: 58px; height: 58px; align-items: center; justify-content: center;">
+                <div class="d-inline-flex p-3 rounded-circle bg-white text-primary mb-3 shadow-sm auth-avatar-box">
                     <i class="bi bi-person-fill fs-2 text-primary"></i>
                 </div>
                 <h4 class="fw-bold mb-1 text-white">Đăng Nhập KittyMember</h4>
@@ -27,7 +28,7 @@
 
                 @if (TempData["AuthRequired"] != null)
                 {
-                    <div class="alert alert-info alert-dismissible fade show rounded-3 small py-2 mb-3" role="alert" style="background-color: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1;">
+                    <div class="alert alert-info alert-dismissible fade show rounded-3 small py-2 mb-3 alert-auth-info" role="alert">
                         <i class="bi bi-shield-lock-fill me-2 text-primary"></i>@TempData["AuthRequired"]
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
@@ -73,7 +74,7 @@
                         <span class="small text-muted"><i class="bi bi-telephone-fill me-1 text-primary"></i>Hotline: 0396166509</span>
                     </div>
 
-                    <button type="submit" class="btn text-white w-100 py-2 rounded-pill fw-bold shadow-sm mb-3" style="background: linear-gradient(135deg, #0e2254, #0284c7); border: none;">
+                    <button type="submit" class="btn text-white w-100 py-2 rounded-pill fw-bold shadow-sm mb-3 btn-auth-gradient">
                         <i class="bi bi-box-arrow-in-right me-1"></i>ĐĂNG NHẬP KITTYMEMBER
                     </button>
                 </form>

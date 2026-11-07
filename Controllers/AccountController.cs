@@ -62,6 +62,9 @@ namespace BTL_PTTKYC.Controllers
                 return RedirectToAction("Verify2FA");
             }
 
+            // Dọn dẹp sạch Session giỏ hàng để tài khoản nhân viên nội bộ không thừa hưởng session từ khách
+            HttpContext.Session.Remove("KittyPhone_Cart");
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, account.AccountId.ToString()),
@@ -147,8 +150,9 @@ namespace BTL_PTTKYC.Controllers
                 return View(model);
             }
 
-            // Xóa session 2FA sau khi xác thực thành công
+            // Xóa session 2FA sau khi xác thực thành công và dọn sạch Session giỏ hàng
             HttpContext.Session.Remove("Admin2FA_Otp");
+            HttpContext.Session.Remove("KittyPhone_Cart");
 
             var claims = new List<Claim>
             {
@@ -182,6 +186,9 @@ namespace BTL_PTTKYC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            // Dọn dẹp sạch Session giỏ hàng và dữ liệu phiên làm việc nội bộ
+            HttpContext.Session.Remove("KittyPhone_Cart");
+            HttpContext.Session.Clear();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }

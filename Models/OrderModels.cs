@@ -45,6 +45,11 @@ namespace BTL_PTTKYC.Models
 
         // Dịch vụ giao hàng tận nhà & cước phí
         public string DeliveryMethod { get; set; } = "HomeDelivery"; // "HomeDelivery" hoặc "StorePickup"
+        public string? ShippingMethod
+        {
+            get => DeliveryMethod;
+            set => DeliveryMethod = value ?? "HomeDelivery";
+        }
         public string ShippingCarrier { get; set; } = "xanhsm"; // "xanhsm", "grab", "viettelpost", "ghn"
         public string ShippingCarrierName { get; set; } = "Xanh SM Express";
         public decimal ShippingFee { get; set; } = 0;
@@ -101,12 +106,38 @@ namespace BTL_PTTKYC.Models
 
         public bool IsInstallment => PaymentMethodSelected != null && PaymentMethodSelected.StartsWith("Trả góp");
 
+        public bool IsFullyPaid => Status == "Paid" || Status == "Shipping" || Status == "Delivered" || (PaidAmount >= TotalAmount && TotalAmount > 0);
+
+        public string StatusBadgeClass => Status switch
+        {
+            "Paid" => "bg-success text-white",
+            "Shipping" => "bg-info text-dark",
+            "Delivered" => "bg-primary text-white",
+            "Pending" => "bg-warning text-dark",
+            "Cancelled" => "bg-danger text-white",
+            "CancelRequested" => "bg-warning text-dark",
+            _ => "bg-secondary text-white"
+        };
+
+        public string StatusVietnamese => Status switch
+        {
+            "Pending" => (PaidAmount > 0 ? $"Chờ duyệt (Đã cọc {PaidAmount:N0}đ)" : "Chờ Sale phê duyệt"),
+            "Paid" => "Đã thanh toán (Sẵn sàng giao)",
+            "Shipping" => "Đang giao hàng (Shipping)",
+            "Delivered" => "Đã giao hàng thành công (Delivered)",
+            "Cancelled" => "Đã hủy đơn (Cancelled)",
+            "CancelRequested" => "Chờ Admin duyệt yêu cầu hủy",
+            _ => Status
+        };
+
         public string PaymentStatusText
         {
             get
             {
                 if (Status == "Cancelled") return $"Đã hủy đơn{(string.IsNullOrEmpty(CancelReason) ? "" : $" (Lý do: {CancelReason})")}";
                 if (Status == "CancelRequested") return "Chờ Quản trị viên (Admin) phê duyệt yêu cầu hủy";
+                if (Status == "Delivered") return "Đã giao hàng thành công (Delivered)";
+                if (Status == "Shipping") return "Đang giao hàng (Shipping)";
                 if (Status == "Paid" || (PaidAmount >= TotalAmount && TotalAmount > 0)) return "Đã thanh toán đủ 100% (Paid)";
                 if (Status == "Pending")
                 {

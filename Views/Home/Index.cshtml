@@ -311,9 +311,9 @@
                                     <a asp-controller="Home" asp-action="Detail" asp-route-id="@(bannerIphone?.ProductId ?? 1)" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none;">
                                         Đặt trước ngay
                                     </a>
-                                    <a href="tel:0396166509" class="btn btn-outline-light rounded-pill px-3">
+                                    <button type="button" class="btn btn-outline-light rounded-pill px-3 btn-trigger-kittybot" data-prompt="Tư vấn cho tôi về các dòng iPhone mới nhất và chương trình ưu đãi đặt trước tại KittyPhone.">
                                         Tư vấn miễn phí
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
 
@@ -363,9 +363,9 @@
                                     <a asp-controller="Home" asp-action="Detail" asp-route-id="@(bannerS25?.ProductId ?? 1)" class="btn btn-warning fw-bold text-dark rounded-pill px-4 shadow-sm">
                                         Mua ngay
                                     </a>
-                                    <a href="tel:0396166509" class="btn btn-outline-light rounded-pill px-3">
+                                    <button type="button" class="btn btn-outline-light rounded-pill px-3 btn-trigger-kittybot" data-prompt="Tư vấn cho tôi về Samsung Galaxy S25 Ultra 5G và chương trình trả góp 0%.">
                                         Tư vấn miễn phí
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
 
@@ -388,10 +388,10 @@
                     </div>
                 </div>
 
-                <button class="carousel-control-prev" type="button" data-bs-target="#cpsMainCarousel" data-bs-slide="prev" aria-label="Lùi lại">
+                <button class="carousel-control-prev" type="button" data-bs-target="#cpsMainCarousel" data-bs-slide="prev" aria-label="Lùi lại" title="Lùi lại slide trước">
                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                 </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#cpsMainCarousel" data-bs-slide="next" aria-label="Xem tiếp">
+                <button class="carousel-control-next" type="button" data-bs-target="#cpsMainCarousel" data-bs-slide="next" aria-label="Xem tiếp" title="Chuyển sang slide tiếp theo">
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
                 </button>
             </div>
@@ -750,9 +750,18 @@
                                         <i class="bi bi-calendar-range text-muted me-1"></i><span>@promo.StartDate.ToString("dd/MM") - @promo.EndDate.ToString("dd/MM/yyyy")</span>
                                     }
                                 </span>
-                                <a href="#productCatalog" class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" style="font-size: 11px;">
-                                    Mua ngay
-                                </a>
+                                @if ((promo.MinRankId.HasValue && promo.MinRankId > 1) || promo.PromotionName.Contains("Hội viên") || promo.PromotionName.Contains("KittyMember"))
+                                {
+                                    <a href="@Url.Action("Profile", "Customer")" class="btn btn-sm btn-primary text-white fw-bold px-2 py-1 btn-kitty-member-privilege" style="font-size: 11px;" data-bs-toggle="modal" data-bs-target="#modalKittyMemberPrivileges" title="Xem đặc quyền thành viên KittyMember">
+                                        <i class="bi bi-patch-check-fill me-1"></i>Xem đặc quyền hội viên
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a href="#productCatalog" class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" style="font-size: 11px;">
+                                        Mua ngay
+                                    </a>
+                                }
                             </div>
                         </div>
                     </div>
@@ -814,9 +823,9 @@
                                     </div>
                                     <span class="text-muted" style="font-size: 10px;">Đã bán 78/100 máy</span>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-danger w-100 rounded-pill fw-bold shadow-sm" onclick="addToCart(@item.ProductId)">
-                                    <i class="bi bi-cart-plus me-1"></i>Săn Deal Ngay
-                                </button>
+                                <a href="@Url.Action("Detail", "Home", new { id = item.ProductId })" class="btn btn-sm btn-danger w-100 rounded-pill fw-bold shadow-sm btn-san-deal" data-product-id="@item.ProductId" title="Săn Deal ngay - Xem chi tiết @item.ProductName">
+                                    <i class="bi bi-lightning-charge-fill me-1"></i>Săn Deal Ngay
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -1640,266 +1649,80 @@
     </div>
 </div>
 
-@section Scripts {
-<script>
-    // 1. Stage Slider Navigation & Auto Scroll
-    let stageAutoScrollTimer = null;
-    let isStagePaused = false;
-    const STAGE_AUTO_SCROLL_DELAY = 3000; // Tự động lướt mỗi 3 giây
+<!-- ========================================================
+     MODAL 5: CHÍNH SÁCH ĐẶC QUYỀN HỘI VIÊN KITTYMEMBER
+     ======================================================== -->
+<div class="modal fade" id="modalKittyMemberPrivileges" tabindex="-1" aria-labelledby="modalKittyMemberLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 text-white p-3 p-md-4" style="background: linear-gradient(135deg, #0e2254 0%, #0284c7 100%);">
+                <div>
+                    <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill mb-2">
+                        <i class="bi bi-award-fill me-1 text-primary"></i>ĐẶC QUYỀN KITTYMEMBER
+                    </span>
+                    <h4 class="modal-title fw-bold text-white mb-1" id="modalKittyMemberLabel">
+                        Chính Sách Tích Điểm &amp; Hạng Hội Viên KittyPhone
+                    </h4>
+                    <p class="text-white-50 small mb-0">Tích lũy chi tiêu tự động - Giảm giá trực tiếp tới 5% trên mọi đơn hàng</p>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6 col-lg-3">
+                        <div class="p-3 bg-white rounded-3 border h-100 text-center shadow-sm">
+                            <span class="badge bg-secondary mb-2 px-3 py-1">Standard</span>
+                            <h6 class="fw-bold text-dark">Thành Viên Mới</h6>
+                            <p class="small text-muted mb-2">Chi tiêu từ 0đ</p>
+                            <span class="text-primary fw-bold small d-block">Tích điểm 0.5%</span>
+                            <span class="text-muted small">Bảo hành chính hãng</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="p-3 bg-white rounded-3 border h-100 text-center shadow-sm" style="border-top: 4px solid #94a3b8 !important;">
+                            <span class="badge bg-secondary-subtle text-dark mb-2 px-3 py-1"><i class="bi bi-shield-shaded me-1"></i>Silver</span>
+                            <h6 class="fw-bold text-dark">Hạng Bạc</h6>
+                            <p class="small text-muted mb-2">Chi tiêu từ 15 Triệu</p>
+                            <span class="text-primary fw-bold small d-block">Giảm thêm 1%</span>
+                            <span class="text-muted small">Vệ sinh máy trọn đời</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="p-3 bg-white rounded-3 border h-100 text-center shadow-sm" style="border-top: 4px solid #eab308 !important;">
+                            <span class="badge bg-warning text-dark mb-2 px-3 py-1"><i class="bi bi-patch-check-fill me-1"></i>Gold</span>
+                            <h6 class="fw-bold text-dark">Hạng Vàng</h6>
+                            <p class="small text-muted mb-2">Chi tiêu từ 35 Triệu</p>
+                            <span class="text-danger fw-bold small d-block">Giảm thêm 2%</span>
+                            <span class="text-muted small">Ưu tiên phục vụ</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="p-3 bg-white rounded-3 border h-100 text-center shadow-sm" style="border-top: 4px solid #ef4444 !important;">
+                            <span class="badge bg-danger text-white mb-2 px-3 py-1"><i class="bi bi-gem me-1"></i>VIP Diamond</span>
+                            <h6 class="fw-bold text-dark">Kim Cương</h6>
+                            <p class="small text-muted mb-2">Chi tiêu từ 70 Triệu</p>
+                            <span class="text-danger fw-bold small d-block">Giảm thêm 5%</span>
+                            <span class="text-muted small">Quà sinh nhật VIP</span>
+                        </div>
+                    </div>
+                </div>
 
-    function startStageAutoScroll() {
-        stopStageAutoScroll();
-        stageAutoScrollTimer = setInterval(function () {
-            if (isStagePaused) return;
-
-            var track = document.getElementById('stageSliderTrack');
-            if (!track) return;
-
-            var visibleItems = track.querySelectorAll('.stage-filter-item:not([style*="display: none"])');
-            if (visibleItems.length <= 1) return;
-
-            // Tính bước nhảy theo kích thước item
-            var step = visibleItems[0].offsetWidth + 12;
-            var maxScroll = track.scrollWidth - track.clientWidth;
-
-            if (track.scrollLeft >= maxScroll - 15) {
-                track.scrollTo({ left: 0, behavior: 'smooth' });
-            } else {
-                track.scrollBy({ left: step, behavior: 'smooth' });
-            }
-        }, STAGE_AUTO_SCROLL_DELAY);
-    }
-
-    function stopStageAutoScroll() {
-        if (stageAutoScrollTimer) {
-            clearInterval(stageAutoScrollTimer);
-            stageAutoScrollTimer = null;
-        }
-    }
-
-    function scrollStageSlider(direction) {
-        var track = document.getElementById('stageSliderTrack');
-        if (track) {
-            var visibleItems = track.querySelectorAll('.stage-filter-item:not([style*="display: none"])');
-            var step = (visibleItems.length > 0 ? visibleItems[0].offsetWidth + 12 : 240) * direction;
-            track.scrollBy({ left: step, behavior: 'smooth' });
-
-            // Tạm dừng tự lướt khi người dùng bấm nút thủ công
-            isStagePaused = true;
-            setTimeout(function() {
-                isStagePaused = false;
-            }, 4000);
-        }
-    }
-
-    // 2. For You Slider Navigation
-    function scrollForYouSlider(direction) {
-        var track = document.getElementById('forYouSliderTrack');
-        if (track) {
-            var scrollAmount = 320 * direction;
-            track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        }
-    }
-
-    // 3. Stage Category Pills Switching & Auto-Scroll Setup
-    document.addEventListener("DOMContentLoaded", function () {
-        var stageSection = document.getElementById('dealChongDeal');
-        if (stageSection) {
-            // Tạm dừng khi rê chuột vào để tiện xem và click
-            stageSection.addEventListener('mouseenter', function () {
-                isStagePaused = true;
-            });
-            stageSection.addEventListener('mouseleave', function () {
-                isStagePaused = false;
-            });
-            stageSection.addEventListener('touchstart', function () {
-                isStagePaused = true;
-            }, { passive: true });
-            stageSection.addEventListener('touchend', function () {
-                setTimeout(function () { isStagePaused = false; }, 3000);
-            }, { passive: true });
-        }
-
-        // Bắt đầu tự động lướt
-        startStageAutoScroll();
-
-        // Chuyển tab danh mục
-        var pills = document.querySelectorAll('#stageTabsList .cps-stage-pill');
-        var track = document.getElementById('stageSliderTrack');
-
-        pills.forEach(function(pill) {
-            pill.addEventListener('click', function() {
-                pills.forEach(function(p) { p.classList.remove('active'); });
-                this.classList.add('active');
-                var filter = this.getAttribute('data-stage-filter');
-                var items = document.querySelectorAll('#stageSliderTrack .stage-filter-item');
-                
-                items.forEach(function(item) {
-                    var tags = (item.getAttribute('data-tags') || '').split(' ');
-                    if (filter === 'all' || tags.indexOf(filter) !== -1) {
-                        item.style.display = '';
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-
-                if (track) {
-                    track.scrollTo({ left: 0, behavior: 'smooth' });
-                }
-
-                // Kích hoạt lại luồng lướt tự động ngay cho danh mục mới
-                isStagePaused = false;
-                startStageAutoScroll();
-            });
-        });
-    });
-
-    // 6. Realtime 4-Digit Countdown Timer (Ngày : Giờ : Phút : Giây)
-    (function initCountdown() {
-        var targetDate = new Date();
-        targetDate.setHours(23, 59, 59, 999);
-        targetDate.setDate(targetDate.getDate() + 1);
-
-        function updateCountdown() {
-            var now = new Date().getTime();
-            var diff = targetDate.getTime() - now;
-
-            if (diff <= 0) {
-                diff = 24 * 3600 * 1000;
-            }
-
-            var days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            var secs = Math.floor((diff % (1000 * 60)) / 1000);
-
-            var elD = document.getElementById('stageCdDay');
-            var elH = document.getElementById('stageCdHour');
-            var elM = document.getElementById('stageCdMin');
-            var elS = document.getElementById('stageCdSec');
-
-            if (elD) elD.textContent = String(days).padStart(2, '0');
-            if (elH) elH.textContent = String(hours).padStart(2, '0');
-            if (elM) elM.textContent = String(mins).padStart(2, '0');
-            if (elS) elS.textContent = String(secs).padStart(2, '0');
-        }
-
-        updateCountdown();
-        setInterval(updateCountdown, 1000);
-    })();
-
-    // 7. Interactive Trade-In Calculator
-    function calculateTradeIn() {
-        var oldVal = parseFloat(document.getElementById('tradeOldDevice')?.value || 21500000);
-        var condMult = parseFloat(document.getElementById('tradeCondition')?.value || 1.0);
-        var newVal = parseFloat(document.getElementById('tradeNewDevice')?.value || 41990000);
-
-        var actualOldPrice = Math.round(oldVal * condMult);
-        var subsidy = 2500000;
-        var totalDeduct = actualOldPrice + subsidy;
-        var payMore = Math.max(0, newVal - totalDeduct);
-
-        function fmt(n) {
-            return n.toLocaleString('vi-VN') + 'đ';
-        }
-
-        var elOld = document.getElementById('tradeOldPrice');
-        var elDeduct = document.getElementById('tradeTotalDeduct');
-        var elPay = document.getElementById('tradePayMore');
-
-        if (elOld) elOld.textContent = fmt(actualOldPrice);
-        if (elDeduct) elDeduct.textContent = fmt(totalDeduct);
-        if (elPay) elPay.textContent = fmt(payMore);
-    }
-
-    // 8. Flash Sale Countdown Timer (Feature 4)
-    (function initFlashSaleTimer() {
-        var timerEl = document.getElementById('flashSaleTimer');
-        if (!timerEl) return;
-
-        var endTime = new Date();
-        endTime.setHours(23, 59, 59, 999);
-
-        function tick() {
-            var now = new Date().getTime();
-            var diff = endTime.getTime() - now;
-            if (diff < 0) diff = 0;
-
-            var hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-            var minutes = Math.floor((diff / (1000 * 60)) % 60);
-            var seconds = Math.floor((diff / 1000) % 60);
-
-            var hEl = timerEl.querySelector('.timer-hours');
-            var mEl = timerEl.querySelector('.timer-minutes');
-            var sEl = timerEl.querySelector('.timer-seconds');
-
-            if (hEl) hEl.textContent = String(hours).padStart(2, '0');
-            if (mEl) mEl.textContent = String(minutes).padStart(2, '0');
-            if (sEl) sEl.textContent = String(seconds).padStart(2, '0');
-        }
-
-        tick();
-        setInterval(tick, 1000);
-    })();
-
-    // 9. Community Tech Poll Widget (Feature 8)
-    var pollState = {
-        votes: [800, 474, 208],
-        hasVoted: false
-    };
-
-    function initPollState() {
-        var saved = localStorage.getItem('kitty_tech_poll');
-        if (saved) {
-            pollState.hasVoted = true;
-            $('#pollAlertMessage').show();
-            highlightVotedOption(saved);
-        }
-    }
-
-    function castPollVote(optId) {
-        if (pollState.hasVoted) {
-            alert('Bạn đã tham gia bình chọn rồi! Mã voucher của bạn là: FLAGSHIP500');
-            return;
-        }
-
-        pollState.votes[optId - 1]++;
-        pollState.hasVoted = true;
-        localStorage.setItem('kitty_tech_poll', optId);
-
-        var total = pollState.votes[0] + pollState.votes[1] + pollState.votes[2];
-        var p1 = Math.round((pollState.votes[0] / total) * 100);
-        var p2 = Math.round((pollState.votes[1] / total) * 100);
-        var p3 = 100 - p1 - p2;
-
-        $('#pollBar1').css('width', p1 + '%');
-        $('#pollPercent1').text(p1 + '%');
-
-        $('#pollBar2').css('width', p2 + '%');
-        $('#pollPercent2').text(p2 + '%');
-
-        $('#pollBar3').css('width', p3 + '%');
-        $('#pollPercent3').text(p3 + '%');
-
-        $('#pollTotalVotes').text(total.toLocaleString('vi-VN'));
-        $('#pollAlertMessage').slideDown();
-        highlightVotedOption(optId);
-
-        if (window.showCartToast) {
-            window.showCartToast('Đã ghi nhận bình chọn thành công! Bạn nhận được Voucher 500k', true);
-        }
-    }
-
-    function highlightVotedOption(optId) {
-        $('.poll-card').css('border-color', '#e2e8f0');
-        $('.poll-card:nth-child(' + optId + ')').css({
-            'border-color': '#0284c7',
-            'box-shadow': '0 4px 12px rgba(2, 132, 199, 0.15)'
-        });
-    }
-
-    $(document).ready(function() {
-        initPollState();
-    });
-</script>
-}
+                <div class="p-3 bg-white rounded-3 border mb-3">
+                    <h6 class="fw-bold text-primary mb-2"><i class="bi bi-check-circle-fill me-2"></i>Quyền lợi độc quyền khi kích hoạt tài khoản:</h6>
+                    <ul class="small text-muted ps-3 mb-0">
+                        <li><strong>Chiết khấu tự động:</strong> Hệ thống tự động trừ tiền chiết khấu theo hạng thẻ ngay tại bước thanh toán.</li>
+                        <li><strong>Bảo hành tại nhà 0đ:</strong> Đặt lịch kỹ thuật viên đến tận nhà lấy máy bảo hành miễn phí cước vận chuyển.</li>
+                        <li><strong>Hóa đơn VAT điện tử:</strong> Lưu trữ trọn đời và tải hóa đơn PDF mọi lúc tại trang quản lý đơn hàng.</li>
+                        <li><strong>Dán cường lực &amp; Vệ sinh máy miễn phí:</strong> Miễn phí trọn đời tại tất cả chi nhánh KittyPhone.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-white p-3 d-flex justify-content-between">
+                <a href="@Url.Action("Profile", "Customer")" class="btn btn-primary rounded-pill px-4 fw-bold">
+                    <i class="bi bi-person-circle me-1"></i>Xem Tài Khoản Của Tôi
+                </a>
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -28,6 +28,10 @@ cloudflared.exe
 *.log
 docs/
 
+# Agent Documentation & Handoff (Local only)
+DOCS.md
+AGENTS.md
+
 # OS generated files
 Thumbs.db
 ehthumbs.db

@@ -50,6 +50,20 @@ namespace BTL_PTTKYC.Controllers
                 return RedirectToAction("OrderDetail", new { id = invoiceId });
             }
 
+            var order = _orderRepo.GetOrderById(invoiceId);
+            if (order == null)
+            {
+                TempData["Error"] = "Đơn hàng không tồn tại.";
+                return RedirectToAction("OrderDetail", new { id = invoiceId });
+            }
+
+            // Chống tạo giao dịch thanh toán trùng lặp khi đơn đã thanh toán đủ 100%
+            if (order.IsFullyPaid || order.RemainingAmount <= 0)
+            {
+                TempData["Error"] = "Đơn hàng này đã được thanh toán đủ 100%, không thể tạo thêm giao dịch thu tiền để tránh trùng lặp dòng tiền.";
+                return RedirectToAction("OrderDetail", new { id = invoiceId });
+            }
+
             bool success = _orderRepo.ConfirmPayment(invoiceId, amount, paymentMethod, out string error);
             if (success)
             {
@@ -58,6 +72,35 @@ namespace BTL_PTTKYC.Controllers
             else
             {
                 TempData["Error"] = "Lỗi khi xác nhận thanh toán: " + error;
+            }
+
+            return RedirectToAction("OrderDetail", new { id = invoiceId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateShippingStatus(int invoiceId, string newStatus)
+        {
+            if (string.IsNullOrWhiteSpace(newStatus))
+            {
+                TempData["Error"] = "Trạng thái mới không hợp lệ.";
+                return RedirectToAction("OrderDetail", new { id = invoiceId });
+            }
+
+            if (_orderRepo.UpdateOrderStatus(invoiceId, newStatus, out string error))
+            {
+                string statusText = newStatus switch
+                {
+                    "Shipping" => "Đang giao hàng (Shipping)",
+                    "Delivered" => "Đã giao hàng thành công (Delivered)",
+                    "Paid" => "Đã thanh toán (Paid)",
+                    _ => newStatus
+                };
+                TempData["Success"] = $"Đã cập nhật trạng thái đơn hàng #{invoiceId} sang [{statusText}] thành công!";
+            }
+            else
+            {
+                TempData["Error"] = "Lỗi khi cập nhật trạng thái vận chuyển: " + error;
             }
 
             return RedirectToAction("OrderDetail", new { id = invoiceId });

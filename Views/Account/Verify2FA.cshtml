@@ -1,6 +1,7 @@
 @model BTL_PTTKYC.Models.Verify2FAViewModel
 @{
     ViewData["Title"] = "Xác Thực 2 Bước (2FA) - KittyPhone Security";
+    ViewData["IsAdminAuthPage"] = true;
     Layout = "_Layout";
     string demoOtp = ViewBag.DemoOtp as string ?? "";
     string username = ViewBag.Username as string ?? "Admin";
@@ -11,7 +12,7 @@
         <div class="col-md-6 col-lg-5">
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
                 <!-- Header -->
-                <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, #0e2254 0%, #0284c7 100%);">
+                <div class="p-4 text-center text-white admin-hero-gradient">
                     <div class="d-inline-flex p-3 rounded-circle bg-white bg-opacity-15 mb-3 shadow-sm">
                         <i class="bi bi-shield-lock-fill fs-1 text-warning"></i>
                     </div>
@@ -31,7 +32,7 @@
                             <div class="fs-4 fw-bold font-monospace text-center py-1 bg-white rounded border border-warning text-danger letter-spacing-2">
                                 @demoOtp
                             </div>
-                            <div class="text-muted mt-1" style="font-size: 11px;">
+                            <div class="text-muted mt-1 small">
                                 *Trong thực tế mã này được gửi qua Email/SMS của tài khoản <strong>@username</strong>.
                             </div>
                         </div>
@@ -72,7 +73,7 @@
                             </a>
                         </div>
 
-                        <button type="submit" class="btn btn-danger w-100 py-3 rounded-pill fw-bold shadow" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border: none;">
+                        <button type="submit" class="btn btn-danger w-100 py-3 rounded-pill fw-bold shadow">
                             <i class="bi bi-check2-circle me-1"></i>XÁC NHẬN & VÀO DASHBOARD
                         </button>
                     </form>
@@ -87,37 +88,3 @@
         </div>
     </div>
 </div>
-
-<style>
-    .letter-spacing-2 {
-        letter-spacing: 4px;
-    }
-    .letter-spacing-3 {
-        letter-spacing: 8px;
-    }
-</style>
-
-@section Scripts {
-<script>
-    (function () {
-        var duration = 5 * 60;
-        var timerDisplay = document.getElementById('otpTimer');
-        var timer = setInterval(function () {
-            var minutes = parseInt(duration / 60, 10);
-            var seconds = parseInt(duration % 60, 10);
-
-            minutes = minutes < 10 ? "0" + minutes : minutes;
-            seconds = seconds < 10 ? "0" + seconds : seconds;
-
-            if (timerDisplay) {
-                timerDisplay.textContent = minutes + ":" + seconds;
-            }
-
-            if (--duration < 0) {
-                clearInterval(timer);
-                if (timerDisplay) timerDisplay.textContent = "Hết hạn";
-            }
-        }, 1000);
-    })();
-</script>
-}

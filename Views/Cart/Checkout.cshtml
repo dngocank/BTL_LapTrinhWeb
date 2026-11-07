@@ -57,6 +57,7 @@
 
             <!-- Hidden Inputs for Delivery & Shipping Carrier -->
             <input type="hidden" asp-for="DeliveryMethod" id="hdnDeliveryMethod" value="HomeDelivery" />
+            <input type="hidden" name="ShippingMethod" id="hdnShippingMethod" value="HomeDelivery" />
             <input type="hidden" asp-for="ShippingCarrier" id="hdnShippingCarrier" value="@(string.IsNullOrEmpty(Model.ShippingCarrier) ? "xanhsm" : Model.ShippingCarrier)" />
             <input type="hidden" asp-for="ShippingCarrierName" id="hdnShippingCarrierName" value="@(string.IsNullOrEmpty(Model.ShippingCarrierName) ? "Xanh SM Express" : Model.ShippingCarrierName)" />
             <input type="hidden" asp-for="ShippingFee" id="hdnShippingFee" value="@Model.ShippingFee" />
@@ -80,14 +81,14 @@
                             <label class="form-label fw-bold small text-dark mb-2">Hình thức nhận hàng:</label>
                             <div class="row g-2">
                                 <div class="col-6">
-                                    <div class="delivery-method-card active p-2 border rounded-3 text-center cursor-pointer" id="btnMethodHome" onclick="selectDeliveryMethod('HomeDelivery')">
+                                    <div class="delivery-method-card active p-2 border rounded-3 text-center cursor-pointer" id="btnMethodHome" data-delivery-method="HomeDelivery">
                                         <i class="bi bi-truck fs-5 text-primary d-block mb-1"></i>
                                         <strong class="small d-block text-dark">Giao hàng tận nhà</strong>
                                         <span class="text-muted" style="font-size: 11px;">Hỏa tốc xe máy / Bưu tá</span>
                                     </div>
                                 </div>
                                 <div class="col-6">
-                                    <div class="delivery-method-card p-2 border rounded-3 text-center cursor-pointer" id="btnMethodStore" onclick="selectDeliveryMethod('StorePickup')">
+                                    <div class="delivery-method-card p-2 border rounded-3 text-center cursor-pointer" id="btnMethodStore" data-delivery-method="StorePickup">
                                         <i class="bi bi-shop fs-5 text-secondary d-block mb-1"></i>
                                         <strong class="small d-block text-dark">Lấy tại cửa hàng</strong>
                                         <span class="text-muted" style="font-size: 11px;">123 Thái Hà, Đống Đa (Miễn phí)</span>
@@ -126,7 +127,7 @@
                                 <div class="row g-2 mb-2">
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold small text-dark">Khu vực / Quận Huyện (Hà Nội):</label>
-                                        <select class="form-select form-select-sm" id="cboDistrictQuick" onchange="onDistrictChange()">
+                                        <select class="form-select form-select-sm" id="cboDistrictQuick">
                                             <option value="Đống Đa" data-km="1.5">Quận Đống Đa (Cách shop 1.5 km)</option>
                                             <option value="Thanh Xuân" data-km="3.5">Quận Thanh Xuân (Cách shop 3.5 km)</option>
                                             <option value="Cầu Giấy" data-km="5.0" selected>Quận Cầu Giấy (Cách shop 5.0 km)</option>
@@ -147,9 +148,9 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold small text-dark">Khoảng cách ước tính:</label>
                                         <div class="input-group input-group-sm">
-                                            <input type="number" step="0.5" min="0.5" max="2000" id="txtDistanceKmInput" class="form-control" value="5.0" onchange="onDistanceManualChange()" />
+                                            <input type="number" step="0.5" min="0.5" max="2000" id="txtDistanceKmInput" class="form-control" value="5.0" />
                                             <span class="input-group-text bg-white">km</span>
-                                            <button type="button" class="btn btn-outline-primary" onclick="recalculateShipping()"><i class="bi bi-arrow-repeat"></i> Tính cước</button>
+                                            <button type="button" class="btn btn-outline-primary" id="btnRecalculateShipping"><i class="bi bi-arrow-repeat"></i> Tính cước</button>
                                         </div>
                                     </div>
                                 </div>
@@ -174,7 +175,7 @@
                                     <div class="row g-2" id="carrierCardsContainer">
                                         <!-- Carrier 1: Xanh SM Express -->
                                         <div class="col-md-6">
-                                            <div class="carrier-option-card selected p-2 border rounded-3 cursor-pointer" data-carrier="xanhsm" data-name="Xanh SM Express" data-fee="0" data-service="Giao hỏa tốc xe máy điện 30 - 60 phút" onclick="selectCarrier(this)">
+                                            <div class="carrier-option-card selected p-2 border rounded-3 cursor-pointer" data-carrier="xanhsm" data-name="Xanh SM Express" data-fee="0" data-service="Giao hỏa tốc xe máy điện 30 - 60 phút">
                                                 <div class="d-flex justify-content-between align-items-start mb-1">
                                                     <span class="fw-bold small text-dark"><i class="bi bi-lightning-charge-fill text-success me-1"></i>Xanh SM Express</span>
                                                     <span class="badge bg-success-subtle text-success fee-badge">0đ</span>
@@ -185,7 +186,7 @@
 
                                         <!-- Carrier 2: GrabExpress -->
                                         <div class="col-md-6">
-                                            <div class="carrier-option-card p-2 border rounded-3 cursor-pointer" data-carrier="grab" data-name="GrabExpress Siêu Tốc" data-fee="5000" data-service="Giao tức thì 30 - 90 phút" onclick="selectCarrier(this)">
+                                            <div class="carrier-option-card p-2 border rounded-3 cursor-pointer" data-carrier="grab" data-name="GrabExpress Siêu Tốc" data-fee="5000" data-service="Giao tức thì 30 - 90 phút">
                                                 <div class="d-flex justify-content-between align-items-start mb-1">
                                                     <span class="fw-bold small text-dark"><i class="bi bi-bicycle text-success me-1"></i>GrabExpress</span>
                                                     <span class="badge bg-light text-dark border fee-badge">5.000đ</span>
@@ -196,7 +197,7 @@
 
                                         <!-- Carrier 3: BeDelivery -->
                                         <div class="col-md-6">
-                                            <div class="carrier-option-card p-2 border rounded-3 cursor-pointer" data-carrier="be" data-name="BeDelivery Tiết Kiệm" data-fee="0" data-service="Giao tiết kiệm xe máy 1 - 2 giờ" onclick="selectCarrier(this)">
+                                            <div class="carrier-option-card p-2 border rounded-3 cursor-pointer" data-carrier="be" data-name="BeDelivery Tiết Kiệm" data-fee="0" data-service="Giao tiết kiệm xe máy 1 - 2 giờ">
                                                 <div class="d-flex justify-content-between align-items-start mb-1">
                                                     <span class="fw-bold small text-dark"><i class="bi bi-send-fill text-warning me-1"></i>BeDelivery</span>
                                                     <span class="badge bg-success-subtle text-success fee-badge">0đ</span>
@@ -207,7 +208,7 @@
 
                                         <!-- Carrier 4: Giao Hàng Nhanh (GHN) -->
                                         <div class="col-md-6">
-                                            <div class="carrier-option-card p-2 border rounded-3 cursor-pointer" data-carrier="ghn" data-name="Giao Hàng Nhanh (GHN)" data-fee="0" data-service="Chuyển phát bưu cục 1 - 2 ngày" onclick="selectCarrier(this)">
+                                            <div class="carrier-option-card p-2 border rounded-3 cursor-pointer" data-carrier="ghn" data-name="Giao Hàng Nhanh (GHN)" data-fee="0" data-service="Chuyển phát bưu cục 1 - 2 ngày">
                                                 <div class="d-flex justify-content-between align-items-start mb-1">
                                                     <span class="fw-bold small text-dark"><i class="bi bi-box-seam-fill text-primary me-1"></i>Giao Hàng Nhanh</span>
                                                     <span class="badge bg-success-subtle text-success fee-badge">0đ</span>
@@ -218,7 +219,7 @@
 
                                         <!-- Carrier 5: Viettel Post -->
                                         <div class="col-md-12">
-                                            <div class="carrier-option-card p-2 border rounded-3 cursor-pointer" data-carrier="viettelpost" data-name="Viettel Post Toàn Quốc" data-fee="0" data-service="Chuyển phát bưu tá toàn quốc 2 - 3 ngày" onclick="selectCarrier(this)">
+                                            <div class="carrier-option-card p-2 border rounded-3 cursor-pointer" data-carrier="viettelpost" data-name="Viettel Post Toàn Quốc" data-fee="0" data-service="Chuyển phát bưu tá toàn quốc 2 - 3 ngày">
                                                 <div class="d-flex justify-content-between align-items-start mb-1">
                                                     <span class="fw-bold small text-dark"><i class="bi bi-shield-shaded text-danger me-1"></i>Viettel Post Toàn Quốc</span>
                                                     <span class="badge bg-success-subtle text-success fee-badge">0đ</span>
@@ -474,341 +475,6 @@
     </div>
 </div>
 
-<style>
-    .delivery-method-card {
-        transition: all 0.2s ease;
-        background: #f8fafc;
-        border-color: #e2e8f0 !important;
-    }
-    .delivery-method-card:hover {
-        border-color: #0284c7 !important;
-        background: #f0f9ff;
-    }
-    .delivery-method-card.active {
-        border-color: #0284c7 !important;
-        background: #f0f9ff;
-        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
-    }
-    .carrier-option-card {
-        transition: all 0.2s ease;
-        background: #ffffff;
-        border-color: #e2e8f0 !important;
-    }
-    .carrier-option-card:hover {
-        border-color: #0284c7 !important;
-        background: #f8fafc;
-    }
-    .carrier-option-card.selected {
-        border-color: #0284c7 !important;
-        background: #f0f9ff;
-        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
-    }
-</style>
-
 @section Scripts {
-<script>
-    let subTotalAmount = @Model.SubTotal;
-    let discountAmount = 0;
-    let shippingFeeAmount = 0;
-    let currentTotal = @Model.TotalAmount;
-
-    function formatVND(num) {
-        return Math.round(num).toLocaleString('vi-VN') + 'đ';
-    }
-
-    function selectDeliveryMethod(method) {
-        $('#hdnDeliveryMethod').val(method);
-        if (method === 'StorePickup') {
-            $('#btnMethodStore').addClass('active');
-            $('#btnMethodHome').removeClass('active');
-            $('#boxStorePickupDetails').slideDown();
-            $('#boxHomeDeliverySection').slideUp();
-
-            // Store pickup = 0 ship
-            shippingFeeAmount = 0;
-            $('#hdnShippingFee').val(0);
-            $('#hdnShippingCarrier').val('store_pickup');
-            $('#hdnShippingCarrierName').val('Nhận tại cửa hàng');
-            $('#hdnShippingServiceType').val('Nhận trực tiếp tại showroom 123 Thái Hà');
-            $('#txtShippingFeeDisplay').html('<span class="text-success fw-bold">0đ (Tại cửa hàng)</span>');
-            recalculateGrandTotal();
-        } else {
-            $('#btnMethodHome').addClass('active');
-            $('#btnMethodStore').removeClass('active');
-            $('#boxStorePickupDetails').slideUp();
-            $('#boxHomeDeliverySection').slideDown();
-
-            // Restore selected carrier
-            const activeCard = $('.carrier-option-card.selected');
-            if (activeCard.length > 0) {
-                selectCarrier(activeCard[0]);
-            } else {
-                recalculateShipping();
-            }
-        }
-    }
-
-    function selectCarrier(element) {
-        $('.carrier-option-card').removeClass('selected');
-        $(element).addClass('selected');
-
-        const carrier = $(element).data('carrier');
-        const name = $(element).data('name');
-        const fee = parseFloat($(element).data('fee')) || 0;
-        const service = $(element).data('service');
-
-        $('#hdnShippingCarrier').val(carrier);
-        $('#hdnShippingCarrierName').val(name);
-        $('#hdnShippingFee').val(fee);
-        $('#hdnShippingServiceType').val(service);
-
-        shippingFeeAmount = fee;
-        if (fee === 0) {
-            $('#txtShippingFeeDisplay').html('<span class="text-success fw-bold">Miễn phí giao hàng</span>');
-        } else {
-            $('#txtShippingFeeDisplay').html('<span class="text-dark fw-bold">' + formatVND(fee) + '</span>');
-        }
-
-        recalculateGrandTotal();
-    }
-
-    function onDistrictChange() {
-        const sel = $('#cboDistrictQuick option:selected');
-        const km = parseFloat(sel.data('km')) || 5.0;
-        const districtName = sel.val();
-        $('#txtDistanceKmInput').val(km);
-        $('#hdnShippingDistanceKm').val(km);
-
-        const currentAddr = $('#txtAddressInput').val();
-        if (!currentAddr || currentAddr.indexOf('Hà Nội') < 0) {
-            if (districtName === 'Tỉnh khác') {
-                $('#txtAddressInput').val('TP. Hồ Chí Minh / Tỉnh thành');
-            } else {
-                $('#txtAddressInput').val('Quận ' + districtName + ', Hà Nội');
-            }
-        }
-        recalculateShipping();
-    }
-
-    function onDistanceManualChange() {
-        const km = parseFloat($('#txtDistanceKmInput').val()) || 5.0;
-        $('#hdnShippingDistanceKm').val(km);
-        recalculateShipping();
-    }
-
-    function recalculateShipping() {
-        if ($('#hdnDeliveryMethod').val() === 'StorePickup') return;
-
-        const distance = parseFloat($('#txtDistanceKmInput').val()) || 5.0;
-        const address = $('#txtAddressInput').val() || 'Hà Nội';
-        const netValue = Math.max(0, subTotalAmount - discountAmount);
-
-        // Gọi API CalculateShipping
-        $.ajax({
-            url: '/Customer/CalculateShipping',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                customerAddress: address,
-                distanceKm: distance,
-                weightKg: 0.8,
-                packageValue: netValue,
-                orderType: 'sale'
-            }),
-            success: function(res) {
-                if (res && res.options && res.options.length > 0) {
-                    renderCarrierOptions(res.options);
-                }
-            },
-            error: function() {
-                console.log('Không thể tải cước shipping động, dùng cấu hình mặc định.');
-            }
-        });
-    }
-
-    function renderCarrierOptions(options) {
-        const container = $('#carrierCardsContainer');
-        const currentCarrier = $('#hdnShippingCarrier').val();
-        container.empty();
-
-        let foundSelected = false;
-
-        options.forEach(function(opt) {
-            const isSelected = (!foundSelected && (opt.carrierCode === currentCarrier || !currentCarrier));
-            if (isSelected) foundSelected = true;
-
-            const feeBadge = opt.finalFee === 0 
-                ? '<span class="badge bg-success-subtle text-success fee-badge">0đ (Freeship)</span>'
-                : '<span class="badge bg-light text-dark border fee-badge">' + formatVND(opt.finalFee) + '</span>';
-
-            const subsidyNote = opt.storeSubsidy > 0 
-                ? '<span class="text-success ms-1"><i class="bi bi-tag-fill"></i> Trợ giá ' + formatVND(opt.storeSubsidy) + '</span>'
-                : '';
-
-            const col = $(`
-                <div class="col-md-6">
-                    <div class="carrier-option-card ${isSelected ? 'selected' : ''} p-2 border rounded-3 cursor-pointer"
-                         data-carrier="${opt.carrierCode}"
-                         data-name="${opt.carrierName}"
-                         data-fee="${opt.finalFee}"
-                         data-service="${opt.serviceType}"
-                         onclick="selectCarrier(this)">
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <span class="fw-bold small text-dark">${opt.carrierName}</span>
-                            ${feeBadge}
-                        </div>
-                        <div class="text-muted" style="font-size: 11px;">
-                            ${opt.estimatedTime} • ${opt.serviceType} ${subsidyNote}
-                        </div>
-                    </div>
-                </div>
-            `);
-            container.append(col);
-
-            if (isSelected) {
-                selectCarrier(col.find('.carrier-option-card')[0]);
-            }
-        });
-    }
-
-    function recalculateGrandTotal() {
-        currentTotal = Math.max(0, subTotalAmount - discountAmount) + shippingFeeAmount;
-        $('#txtFinalTotal').text(formatVND(currentTotal));
-        updatePaymentSummary();
-    }
-
-    function updatePaymentSummary() {
-        const val = $('input[name="PaymentMethod"]:checked').val();
-        if (val === 'COD') {
-            $('#boxBankQrPreview').slideUp();
-            $('#summaryDepositLabel').text('Mức cọc cần thanh toán (50%):');
-            const dep = Math.round(currentTotal * 0.5 / 10000) * 10000;
-            $('#summaryDepositValue').text(formatVND(dep));
-            $('#summaryRemainingLabel').text('Còn lại khi nhận hàng:');
-            $('#summaryRemainingValue').text(formatVND(currentTotal - dep));
-            $('#txtDeposit50').text(formatVND(dep).replace('đ', ''));
-            $('#txtRemaining50').text(formatVND(currentTotal - dep).replace('đ', ''));
-        } else if (val === 'BankTransfer') {
-            $('#boxBankQrPreview').slideDown();
-            const qrUrl = 'https://img.vietqr.io/image/970454-0396166509-compact2.png?amount=' + Math.round(currentTotal) + '&addInfo=' + encodeURIComponent('KITTYPHONE DAT HANG') + '&accountName=DUONG%20NGOC%20ANH';
-            $('#imgCheckoutBankQr').attr('src', qrUrl);
-            $('#txtCheckoutBankQrAmount').text(formatVND(currentTotal));
-
-            $('#summaryDepositLabel').text('Thanh toán toàn bộ (100%):');
-            $('#summaryDepositValue').text(formatVND(currentTotal));
-            $('#summaryRemainingLabel').text('Còn lại khi nhận hàng:');
-            $('#summaryRemainingValue').text('0đ (Đã thanh toán đủ)');
-        } else if (val === 'Installment') {
-            $('#boxBankQrPreview').slideUp();
-            calculateInstallment();
-        }
-    }
-
-    function calculateInstallment() {
-        const prepayPercent = parseInt($('#inputPrepayPercent').val()) || 30;
-        const months = parseInt($('#inputInstallmentMonths').val()) || 6;
-
-        const prepayAmount = Math.round(currentTotal * (prepayPercent / 100) / 10000) * 10000;
-        const loanAmount = Math.max(0, currentTotal - prepayAmount);
-        const monthlyAmount = months > 0 ? Math.round(loanAmount / months / 1000) * 1000 : 0;
-
-        $('#txtPrepayAmount').text(formatVND(prepayAmount));
-        $('#txtLoanAmount').text(formatVND(loanAmount));
-        $('#txtMonthlyAmount').text(formatVND(monthlyAmount) + ' / tháng');
-
-        if ($('input[name="PaymentMethod"]:checked').val() === 'Installment') {
-            $('#summaryDepositLabel').text('Tiền trả trước (' + prepayPercent + '%):');
-            $('#summaryDepositValue').text(formatVND(prepayAmount));
-            $('#summaryRemainingLabel').text('Góp mỗi tháng (' + months + ' tháng):');
-            $('#summaryRemainingValue').text(formatVND(monthlyAmount) + ' / tháng');
-        }
-    }
-
-    $('#cboPromotion').change(function() {
-        const promoId = $(this).val();
-        $('#promoErrorBox').hide();
-
-        if (!promoId) {
-            discountAmount = 0;
-            $('#hdnDiscountAmount').val(0);
-            $('#hdnDiscountPercent').val(0);
-            $('#rowDiscount').hide();
-            $('#promoDescriptionBox').slideUp();
-            recalculateGrandTotal();
-            recalculateShipping();
-            return;
-        }
-
-        // Gọi API backend kiểm tra ràng buộc khung giờ & hạng thành viên
-        $.get('/Cart/CalculateDiscount', { promotionId: promoId, subTotal: subTotalAmount }, function(res) {
-            if (res.success) {
-                discountAmount = res.discountAmount;
-                $('#hdnDiscountAmount').val(res.discountAmount);
-                $('#hdnDiscountPercent').val(res.discountPercent);
-                $('#txtDiscountPercent').text(res.discountPercent);
-                $('#txtDiscountAmount').text('-' + formatVND(res.discountAmount));
-                $('#rowDiscount').show();
-
-                const desc = $('#cboPromotion option:selected').data('desc');
-                if (desc) {
-                    $('#promoDescriptionText').text(desc);
-                    $('#promoDescriptionBox').slideDown();
-                } else {
-                    $('#promoDescriptionBox').slideUp();
-                }
-            } else {
-                // Không thỏa mãn điều kiện ràng buộc
-                $('#promoErrorText').text(res.message);
-                $('#promoErrorBox').slideDown();
-                $('#promoDescriptionBox').slideUp();
-
-                discountAmount = 0;
-                $('#hdnDiscountAmount').val(0);
-                $('#hdnDiscountPercent').val(0);
-                $('#rowDiscount').hide();
-            }
-            recalculateGrandTotal();
-            recalculateShipping();
-        }).fail(function() {
-            $('#promoErrorText').text('Lỗi kiểm tra mã khuyến mãi. Vui lòng thử lại.');
-            $('#promoErrorBox').slideDown();
-        });
-    });
-
-    $('input[name="PaymentMethod"]').change(function() {
-        const val = $(this).val();
-        $('.payment-option-card').removeClass('selected');
-        if (val === 'COD') {
-            $('#cardCod').addClass('selected');
-            $('#boxInstallmentDetails').slideUp();
-        } else if (val === 'BankTransfer') {
-            $('#cardBank').addClass('selected');
-            $('#boxInstallmentDetails').slideUp();
-        } else if (val === 'Installment') {
-            $('#cardInstallment').addClass('selected');
-            $('#boxInstallmentDetails').slideDown();
-        }
-        updatePaymentSummary();
-    });
-
-    $('.btn-prepay').click(function() {
-        $('.btn-prepay').removeClass('active');
-        $(this).addClass('active');
-        $('#inputPrepayPercent').val($(this).data('percent'));
-        calculateInstallment();
-    });
-
-    $('.btn-term').click(function() {
-        $('.btn-term').removeClass('active btn-primary').addClass('btn-outline-secondary');
-        $(this).removeClass('btn-outline-secondary').addClass('active btn-primary');
-        $('#inputInstallmentMonths').val($(this).data('months'));
-        calculateInstallment();
-    });
-
-    // Khởi tạo tính cước khi load trang
-    $(document).ready(function() {
-        recalculateShipping();
-        updatePaymentSummary();
-    });
-</script>
+    <partial name="_ValidationScriptsPartial" />
 }

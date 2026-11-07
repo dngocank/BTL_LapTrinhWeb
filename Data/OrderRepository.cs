@@ -103,15 +103,23 @@ namespace BTL_PTTKYC.Data
                 {
                     invCmd.Parameters.AddWithValue("@custId", customerId);
                     invCmd.Parameters.AddWithValue("@empId", employeeId);
-                    invCmd.Parameters.AddWithValue("@shippingAddr", model.Address.Trim());
+                    var addr = model.Address?.Trim() ?? string.Empty;
+                    invCmd.Parameters.AddWithValue("@shippingAddr", addr.Length > 255 ? addr.Substring(0, 255) : addr);
                     invCmd.Parameters.AddWithValue("@status", initialStatus);
                     invCmd.Parameters.AddWithValue("@notes", (object?)orderNotes ?? DBNull.Value);
                     invCmd.Parameters.AddWithValue("@payMethod", payMethodSelected);
                     invCmd.Parameters.AddWithValue("@promoId", model.PromotionId.HasValue && model.PromotionId.Value > 0 ? (object)model.PromotionId.Value : DBNull.Value);
-                    invCmd.Parameters.AddWithValue("@carrier", (object?)model.ShippingCarrierName ?? (object?)model.ShippingCarrier ?? DBNull.Value);
+                    
+                    var carrierStr = model.ShippingCarrierName ?? model.ShippingCarrier;
+                    if (carrierStr != null && carrierStr.Length > 50) carrierStr = carrierStr.Substring(0, 50);
+                    invCmd.Parameters.AddWithValue("@carrier", (object?)carrierStr ?? DBNull.Value);
+                    
                     invCmd.Parameters.AddWithValue("@shipFee", model.ShippingFee);
                     invCmd.Parameters.AddWithValue("@distKm", model.ShippingDistanceKm);
-                    invCmd.Parameters.AddWithValue("@svcType", (object?)model.ShippingServiceType ?? DBNull.Value);
+                    
+                    var svcStr = model.ShippingServiceType;
+                    if (svcStr != null && svcStr.Length > 50) svcStr = svcStr.Substring(0, 50);
+                    invCmd.Parameters.AddWithValue("@svcType", (object?)svcStr ?? DBNull.Value);
                     invoiceId = Convert.ToInt32(invCmd.ExecuteScalar());
                 }
 
@@ -532,6 +540,84 @@ namespace BTL_PTTKYC.Data
 
                 decimal amountToAdd = order.RemainingAmount > 0 ? order.RemainingAmount : order.TotalAmount;
                 return ConfirmPayment(invoiceId, amountToAdd, "Bank Transfer", out errorMessage);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
+
+        // Cập nhật trạng thái đơn hàng (Shipping, Delivered, Paid, Pending)
+        public bool UpdateOrderStatus(int invoiceId, string newStatus, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            var validStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Pending", "Paid", "Shipping", "Delivered", "Cancelled", "CancelRequested" };
+            if (!validStatuses.Contains(newStatus))
+            {
+                errorMessage = $"Trạng thái '{newStatus}' không hợp lệ trong quy trình xử lý đơn hàng.";
+                return false;
+            }
+
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+
+                // Kiểm tra trạng thái hiện tại
+                using var checkCmd = new SqlCommand("SELECT status, total_amount, (SELECT ISNULL(SUM(amount), 0) FROM Payment WHERE invoice_id = @id) AS paid_amount FROM Invoice WHERE invoice_id = @id", conn);
+                checkCmd.Parameters.AddWithValue("@id", invoiceId);
+                using var reader = checkCmd.ExecuteReader();
+                if (!reader.Read())
+                {
+                    errorMessage = "Đơn hàng không tồn tại.";
+                    return false;
+                }
+
+                string currentStatus = reader["status"].ToString()!;
+                decimal totalAmount = Convert.ToDecimal(reader["total_amount"]);
+                decimal paidAmount = Convert.ToDecimal(reader["paid_amount"]);
+                reader.Close();
+
+                if (currentStatus == "Cancelled")
+                {
+                    errorMessage = "Không thể cập nhật trạng thái của đơn hàng đã bị hủy.";
+                    return false;
+                }
+
+                // Nếu chuyển sang Delivered và phương thức thanh toán là COD nhưng chưa thanh toán đủ -> Tự động thu nốt tiền COD
+                if (newStatus.Equals("Delivered", StringComparison.OrdinalIgnoreCase) && paidAmount < totalAmount)
+                {
+                    decimal remaining = totalAmount - paidAmount;
+                    if (remaining > 0)
+                    {
+                        using var payCmd = new SqlCommand("INSERT INTO Payment (invoice_id, payment_method, amount) VALUES (@id, 'Cash', @amt)", conn);
+                        payCmd.Parameters.AddWithValue("@id", invoiceId);
+                        payCmd.Parameters.AddWithValue("@amt", remaining);
+                        payCmd.ExecuteNonQuery();
+                    }
+                }
+
+                string noteSuffix = newStatus switch
+                {
+                    "Shipping" => "[Bắt đầu giao hàng - Đơn vị vận chuyển đang xử lý]",
+                    "Delivered" => "[Đã giao hàng thành công đến khách hàng]",
+                    _ => $"[Cập nhật trạng thái sang {newStatus}]"
+                };
+
+                var updateSql = @"
+                    UPDATE Invoice 
+                    SET status = @newStatus,
+                        order_notes = ISNULL(order_notes + ' | ', '') + @note
+                    WHERE invoice_id = @id";
+
+                using var cmd = new SqlCommand(updateSql, conn);
+                cmd.Parameters.AddWithValue("@newStatus", newStatus);
+                cmd.Parameters.AddWithValue("@note", noteSuffix);
+                cmd.Parameters.AddWithValue("@id", invoiceId);
+                cmd.ExecuteNonQuery();
+
+                return true;
             }
             catch (Exception ex)
             {

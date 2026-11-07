@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using BTL_PTTKYC.Data;
 using BTL_PTTKYC.Models;
+using BTL_PTTKYC.Services;
 
 namespace BTL_PTTKYC.Controllers
 {
@@ -12,13 +13,20 @@ namespace BTL_PTTKYC.Controllers
         private readonly OrderRepository _orderRepo;
         private readonly CustomerRepository _customerRepo;
         private readonly PromotionRepository _promotionRepo;
+        private readonly IShippingService _shippingService;
 
-        public CartController(ProductRepository productRepo, OrderRepository orderRepo, CustomerRepository customerRepo, PromotionRepository promotionRepo)
+        public CartController(
+            ProductRepository productRepo,
+            OrderRepository orderRepo,
+            CustomerRepository customerRepo,
+            PromotionRepository promotionRepo,
+            IShippingService shippingService)
         {
             _productRepo = productRepo;
             _orderRepo = orderRepo;
             _customerRepo = customerRepo;
             _promotionRepo = promotionRepo;
+            _shippingService = shippingService;
         }
 
         private List<CartItemModel> GetCart()
@@ -36,8 +44,50 @@ namespace BTL_PTTKYC.Controllers
             HttpContext.Session.SetString(CartSessionKey, JsonConvert.SerializeObject(cart));
         }
 
+        /// <summary>
+        /// Kiểm tra vai trò nội bộ (Admin, Sales, Warehouse, Technician) và chuyển hướng về trang quản trị tương ứng.
+        /// Ngăn chặn nhân viên nội bộ thực hiện hành vi mua sắm.
+        /// </summary>
+        private IActionResult? RedirectInternalStaff()
+        {
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                if (User.IsInRole("Admin"))
+                {
+                    TempData["ErrorMessage"] = "Tài khoản Quản trị viên (Admin) không được phép thực hiện chức năng mua sắm.";
+                    return RedirectToAction("Index", "Admin");
+                }
+                if (User.IsInRole("Sales"))
+                {
+                    TempData["ErrorMessage"] = "Tài khoản Nhân viên Bán hàng (Sales) không được phép thực hiện chức năng mua sắm.";
+                    return RedirectToAction("Orders", "Sales");
+                }
+                if (User.IsInRole("Warehouse"))
+                {
+                    TempData["ErrorMessage"] = "Tài khoản Nhân viên Kho (Warehouse) không được phép thực hiện chức năng mua sắm.";
+                    return RedirectToAction("Index", "Warehouse");
+                }
+                if (User.IsInRole("Technician"))
+                {
+                    TempData["ErrorMessage"] = "Tài khoản Kỹ thuật viên (Technician) không được phép thực hiện chức năng mua sắm.";
+                    return RedirectToAction("Workbench", "Technician");
+                }
+            }
+            return null;
+        }
+
         public IActionResult Index()
         {
+            // Kiểm tra và chuyển hướng nếu tài khoản mang vai trò nội bộ
+            var staffRedirect = RedirectInternalStaff();
+            if (staffRedirect != null) return staffRedirect;
+
+            if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Customer"))
+            {
+                TempData["AuthRequired"] = "Quý khách vui lòng đăng nhập tài khoản KittyMember để xem và quản lý giỏ hàng.";
+                return RedirectToAction("Login", "Customer", new { returnUrl = "/Cart" });
+            }
+
             var cart = GetCart();
             return View(cart);
         }
@@ -64,6 +114,34 @@ namespace BTL_PTTKYC.Controllers
         {
             var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                          Request.Headers["Accept"].ToString().Contains("application/json");
+
+            // Ngăn chặn nhân viên nội bộ thực hiện mua hàng
+            var staffRedirect = RedirectInternalStaff();
+            if (staffRedirect != null)
+            {
+                if (isAjax)
+                {
+                    return Json(new { success = false, message = "Tài khoản nhân viên nội bộ không được phép thực hiện chức năng mua sắm." });
+                }
+                return staffRedirect;
+            }
+
+            if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Customer"))
+            {
+                var targetUrl = buyNow ? Url.Action("Checkout", "Cart", new { productId }) : Url.Action("Index", "Cart");
+                if (isAjax)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        requireLogin = true,
+                        redirectUrl = Url.Action("Login", "Customer", new { returnUrl = targetUrl }),
+                        message = "Quý khách vui lòng đăng nhập tài khoản KittyMember để thao tác giỏ hàng."
+                    });
+                }
+                TempData["AuthRequired"] = "Quý khách vui lòng đăng nhập tài khoản KittyMember để thao tác giỏ hàng.";
+                return RedirectToAction("Login", "Customer", new { returnUrl = targetUrl });
+            }
 
             var product = _productRepo.GetProductById(productId);
             if (product == null || product.Quantity <= 0)
@@ -115,6 +193,14 @@ namespace BTL_PTTKYC.Controllers
         [HttpPost]
         public IActionResult UpdateQuantity(int productId, int quantity)
         {
+            var staffRedirect = RedirectInternalStaff();
+            if (staffRedirect != null) return staffRedirect;
+
+            if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Customer"))
+            {
+                return RedirectToAction("Login", "Customer", new { returnUrl = "/Cart" });
+            }
+
             var cart = GetCart();
             var item = cart.FirstOrDefault(c => c.ProductId == productId);
             if (item != null)
@@ -135,6 +221,14 @@ namespace BTL_PTTKYC.Controllers
         [HttpPost]
         public IActionResult Remove(int productId)
         {
+            var staffRedirect = RedirectInternalStaff();
+            if (staffRedirect != null) return staffRedirect;
+
+            if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Customer"))
+            {
+                return RedirectToAction("Login", "Customer", new { returnUrl = "/Cart" });
+            }
+
             var cart = GetCart();
             cart.RemoveAll(c => c.ProductId == productId);
             SaveCart(cart);
@@ -144,6 +238,14 @@ namespace BTL_PTTKYC.Controllers
         [HttpPost]
         public IActionResult ToggleSelection(int productId, bool isSelected)
         {
+            var staffRedirect = RedirectInternalStaff();
+            if (staffRedirect != null) return Json(new { success = false, message = "Nhân viên nội bộ không được thao tác giỏ hàng." });
+
+            if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Customer"))
+            {
+                return Json(new { success = false, requireLogin = true, redirectUrl = Url.Action("Login", "Customer", new { returnUrl = "/Cart" }) });
+            }
+
             var cart = GetCart();
             var item = cart.FirstOrDefault(c => c.ProductId == productId);
             if (item != null)
@@ -165,6 +267,14 @@ namespace BTL_PTTKYC.Controllers
         [HttpPost]
         public IActionResult ToggleSelectAll(bool isSelected)
         {
+            var staffRedirect = RedirectInternalStaff();
+            if (staffRedirect != null) return Json(new { success = false, message = "Nhân viên nội bộ không được thao tác giỏ hàng." });
+
+            if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Customer"))
+            {
+                return Json(new { success = false, requireLogin = true, redirectUrl = Url.Action("Login", "Customer", new { returnUrl = "/Cart" }) });
+            }
+
             var cart = GetCart();
             foreach (var item in cart)
             {
@@ -185,6 +295,10 @@ namespace BTL_PTTKYC.Controllers
         [HttpGet]
         public IActionResult Checkout(int? productId = null, string? selectedIds = null)
         {
+            // Kiểm tra và chuyển hướng nếu tài khoản mang vai trò nội bộ
+            var staffRedirect = RedirectInternalStaff();
+            if (staffRedirect != null) return staffRedirect;
+
             // RÀNG BUỘC NGHIỆP VỤ: Bắt buộc đăng nhập tài khoản khách hàng KittyMember mới được mua hàng
             if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Customer"))
             {
@@ -281,6 +395,10 @@ namespace BTL_PTTKYC.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Checkout(CheckoutViewModel model)
         {
+            // Kiểm tra và chuyển hướng nếu tài khoản mang vai trò nội bộ
+            var staffRedirect = RedirectInternalStaff();
+            if (staffRedirect != null) return staffRedirect;
+
             // RÀNG BUỘC NGHIỆP VỤ: Bắt buộc đăng nhập tài khoản khách hàng KittyMember
             if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Customer"))
             {
@@ -343,6 +461,22 @@ namespace BTL_PTTKYC.Controllers
                         model.DiscountAmount = Math.Round(model.SubTotal * promo.DiscountPercent / 100m / 1000m) * 1000m;
                     }
                 }
+            }
+
+            // Xử lý phương thức nhận hàng: Lấy tại cửa hàng (StorePickup) vs Giao tận nhà (HomeDelivery)
+            if (string.Equals(model.DeliveryMethod, "StorePickup", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(model.ShippingMethod, "StorePickup", StringComparison.OrdinalIgnoreCase))
+            {
+                model.DeliveryMethod = "StorePickup";
+                model.ShippingFee = 0;
+                model.ShippingCarrier = "store_pickup";
+                model.ShippingCarrierName = "Nhận tại Showroom KittyPhone";
+                model.ShippingServiceType = "Nhận tại Showroom 123 Thái Hà";
+                if (string.IsNullOrWhiteSpace(model.Address))
+                {
+                    model.Address = "Showroom KittyPhone - 123 Thái Hà, Đống Đa, Hà Nội";
+                }
+                ModelState.Remove(nameof(model.Address));
             }
 
             model.TotalAmount = Math.Max(0, model.SubTotal - model.DiscountAmount) + model.ShippingFee;
@@ -411,6 +545,105 @@ namespace BTL_PTTKYC.Controllers
                 discountAmount,
                 totalAmount
             });
+        }
+
+        /// <summary>
+        /// Tính toán cước vận chuyển tự động theo khoảng cách và phương thức nhận hàng (AJAX).
+        /// Bắt ngoại lệ an toàn và trả về phí vận chuyển + tổng tiền thanh toán sau khi cộng phí.
+        /// </summary>
+        [HttpPost]
+        public IActionResult CalculateShipping([FromBody] ShippingCalculationRequest? request)
+        {
+            try
+            {
+                request ??= new ShippingCalculationRequest();
+                string method = !string.IsNullOrWhiteSpace(request.ShippingMethod)
+                    ? request.ShippingMethod
+                    : (!string.IsNullOrWhiteSpace(request.DeliveryMethod) ? request.DeliveryMethod : "HomeDelivery");
+
+                // Khi chọn "Lấy tại cửa hàng": Cước phí = 0đ
+                if (method.Equals("StorePickup", StringComparison.OrdinalIgnoreCase))
+                {
+                    decimal grandTotal = Math.Max(0, request.SubTotal - request.DiscountAmount);
+                    return Json(new
+                    {
+                        success = true,
+                        deliveryMethod = "StorePickup",
+                        shippingFee = 0m,
+                        formattedShippingFee = "0đ (Tại cửa hàng)",
+                        subTotal = request.SubTotal,
+                        discountAmount = request.DiscountAmount,
+                        totalAmount = grandTotal,
+                        formattedTotalAmount = grandTotal.ToString("N0") + "đ",
+                        carrier = "store_pickup",
+                        carrierName = "Nhận tại Showroom KittyPhone",
+                        serviceType = "Nhận tại Showroom 123 Thái Hà",
+                        options = new List<object>()
+                    });
+                }
+
+                // Khi chọn "Giao hàng tận nhà": Gọi IShippingService tính toán theo khoảng cách
+                decimal netValue = Math.Max(0, request.SubTotal - request.DiscountAmount);
+                var quoteReq = new ShippingQuoteRequest
+                {
+                    DestinationProvince = string.IsNullOrWhiteSpace(request.Province) ? "Hà Nội" : request.Province,
+                    DestinationDistrict = request.District,
+                    DestinationAddress = request.Address,
+                    DistanceKm = request.DistanceKm > 0 ? request.DistanceKm : 5.0m,
+                    DeclaredValue = netValue > 0 ? netValue : 15000000m
+                };
+
+                var quoteResult = _shippingService.CalculateShipping(quoteReq);
+                var feasibleCarriers = quoteResult.AvailableCarriers.Where(c => c.IsFeasible).ToList();
+
+                var selectedCarrier = feasibleCarriers.FirstOrDefault(c => !string.IsNullOrEmpty(request.CarrierId) && c.CarrierId.Equals(request.CarrierId, StringComparison.OrdinalIgnoreCase))
+                                      ?? quoteResult.BestCarrier
+                                      ?? feasibleCarriers.FirstOrDefault();
+
+                decimal shippingFee = selectedCarrier?.FinalFee ?? 30000m;
+                decimal totalWithShipping = Math.Max(0, request.SubTotal - request.DiscountAmount) + shippingFee;
+
+                return Json(new
+                {
+                    success = true,
+                    deliveryMethod = "HomeDelivery",
+                    distanceKm = quoteResult.Request.DistanceKm,
+                    shippingFee = shippingFee,
+                    formattedShippingFee = shippingFee == 0 ? "0đ (Freeship)" : shippingFee.ToString("N0") + "đ",
+                    subTotal = request.SubTotal,
+                    discountAmount = request.DiscountAmount,
+                    totalAmount = totalWithShipping,
+                    formattedTotalAmount = totalWithShipping.ToString("N0") + "đ",
+                    selectedCarrier = selectedCarrier?.CarrierId ?? "xanhsm",
+                    selectedCarrierName = selectedCarrier?.CarrierName ?? "Giao hàng tiêu chuẩn",
+                    serviceType = selectedCarrier?.ServiceName ?? "Hỏa tốc",
+                    options = feasibleCarriers.Select(c => new
+                    {
+                        carrierCode = c.CarrierId,
+                        carrierName = c.CarrierName,
+                        serviceType = c.ServiceName,
+                        estimatedTime = c.EstimatedDeliveryTime,
+                        finalFee = c.FinalFee,
+                        storeSubsidy = c.StoreSubsidy,
+                        isRecommended = c.IsRecommended
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                // Bắt ngoại lệ an toàn, fallback về cước chuẩn
+                decimal fallbackFee = 30000m;
+                decimal grandTotal = Math.Max(0, (request?.SubTotal ?? 0) - (request?.DiscountAmount ?? 0)) + fallbackFee;
+                return Json(new
+                {
+                    success = false,
+                    message = "Không thể tính cước tự động: " + ex.Message,
+                    shippingFee = fallbackFee,
+                    formattedShippingFee = fallbackFee.ToString("N0") + "đ",
+                    totalAmount = grandTotal,
+                    formattedTotalAmount = grandTotal.ToString("N0") + "đ"
+                });
+            }
         }
 
         public IActionResult Confirmation(int id)

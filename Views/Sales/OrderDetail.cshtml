@@ -22,13 +22,47 @@
                     </button>
                 </form>
             }
+
+            @* Nút chuyển trạng thái giao hàng cho nhân viên Sales *@
+            @if (Model.Status == "Paid" || (Model.Status == "Pending" && Model.PaidAmount > 0))
+            {
+                <form asp-action="UpdateShippingStatus" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="invoiceId" value="@Model.InvoiceId" />
+                    <input type="hidden" name="newStatus" value="Shipping" />
+                    <button type="submit" class="btn btn-info fw-bold text-dark" onclick="return confirm('Xác nhận xuất kho và bắt đầu giao hàng cho đơn #@Model.InvoiceId?');">
+                        <i class="bi bi-truck me-1"></i>Bắt Đầu Giao Hàng (Shipping)
+                    </button>
+                </form>
+            }
+            else if (Model.Status == "Shipping")
+            {
+                <form asp-action="UpdateShippingStatus" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="invoiceId" value="@Model.InvoiceId" />
+                    <input type="hidden" name="newStatus" value="Delivered" />
+                    <button type="submit" class="btn btn-primary fw-bold" onclick="return confirm('Xác nhận khách hàng đã nhận máy thành công cho đơn #@Model.InvoiceId?');">
+                        <i class="bi bi-check2-circle me-1"></i>Xác Nhận Đã Giao Thành Công (Delivered)
+                    </button>
+                </form>
+            }
+
             @if (Model.Status != "Cancelled")
             {
-                <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#confirmPaymentModal">
-                    <i class="bi bi-cash-stack me-1"></i>Ghi Nhận Thu Tiền / Xác Nhận Thanh Toán
-                </button>
+                @if (Model.IsFullyPaid || Model.RemainingAmount <= 0)
+                {
+                    <button type="button" class="btn btn-outline-secondary fw-bold" disabled title="Đơn hàng đã thanh toán đủ 100%, không thể tạo thêm giao dịch thu tiền để tránh trùng lặp.">
+                        <i class="bi bi-check-circle-fill text-success me-1"></i>Đã Thu Đủ 100% (Khóa Thu Tiền)
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#confirmPaymentModal">
+                        <i class="bi bi-cash-stack me-1"></i>Ghi Nhận Thu Tiền / Xác Nhận Thanh Toán
+                    </button>
+                }
 
-                @if (Model.Status != "CancelRequested")
+                @if (Model.Status != "CancelRequested" && Model.Status != "Delivered")
                 {
                     <button type="button" class="btn btn-outline-danger fw-bold" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
                         <i class="bi bi-x-circle me-1"></i>@(User.IsInRole("Admin") ? "Hủy Đơn Hàng" : "Yêu Cầu Hủy Đơn")
@@ -36,6 +70,84 @@
                 }
             }
         </div>
+</div>
+
+<!-- Tiến Trình Xử Lý & Vận Chuyển Đơn Hàng (Visual Timeline) -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden order-logistics-card">
+    <div class="card-header bg-white border-bottom p-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center">
+            <i class="bi bi-diagram-3-fill text-primary me-2"></i>Tiến Trình Xử Lý & Vận Chuyển Đơn Hàng
+        </h6>
+        <span class="badge @Model.StatusBadgeClass rounded-pill px-3 py-1">@Model.StatusVietnamese</span>
+    </div>
+    <div class="card-body p-4 bg-light-subtle">
+        @{
+            bool step2Done = Model.PaidAmount > 0 || Model.Status == "Paid" || Model.Status == "Shipping" || Model.Status == "Delivered";
+            bool step3Active = Model.Status == "Shipping";
+            bool step3Done = Model.Status == "Delivered";
+            bool step4Done = Model.Status == "Delivered";
+        }
+        <div class="order-timeline">
+            <!-- Step 1: Đã đặt hàng -->
+            <div class="order-timeline-step completed">
+                <div class="order-timeline-node">
+                    <i class="bi bi-check-lg"></i>
+                </div>
+                <div class="order-timeline-content">
+                    <strong class="d-block text-dark small">1. Đã Đặt Hàng</strong>
+                    <span class="text-muted timeline-subtext">@Model.InvoiceDate.ToString("dd/MM/yyyy")</span>
+                </div>
+            </div>
+
+            <!-- Connector 1-2 -->
+            <div class="order-timeline-line @(step2Done ? "active" : "")"></div>
+
+            <!-- Step 2: Đã cọc / Thanh toán -->
+            <div class="order-timeline-step @(step2Done ? "completed" : (Model.Status == "Pending" ? "active" : ""))">
+                <div class="order-timeline-node">
+                    @if (step2Done) { <i class="bi bi-check-lg"></i> } else { <span>2</span> }
+                </div>
+                <div class="order-timeline-content">
+                    <strong class="d-block text-dark small">2. Thanh Toán / Nhận Cọc</strong>
+                    <span class="text-muted timeline-subtext">
+                        @(Model.PaidAmount >= Model.TotalAmount && Model.TotalAmount > 0 ? "Đã thu 100%" : (Model.PaidAmount > 0 ? $"Đã cọc {Model.PaidAmount:N0}đ" : "Chờ xác nhận cọc"))
+                    </span>
+                </div>
+            </div>
+
+            <!-- Connector 2-3 -->
+            <div class="order-timeline-line @(step3Active || step3Done ? "active" : "")"></div>
+
+            <!-- Step 3: Đang giao hàng -->
+            <div class="order-timeline-step @(step3Done ? "completed" : (step3Active ? "active" : ""))">
+                <div class="order-timeline-node">
+                    @if (step3Done) { <i class="bi bi-check-lg"></i> } else if (step3Active) { <i class="bi bi-truck"></i> } else { <span>3</span> }
+                </div>
+                <div class="order-timeline-content">
+                    <strong class="d-block text-dark small">3. Đang Giao Hàng</strong>
+                    <span class="text-muted timeline-subtext">
+                        @(step3Active ? "Đang vận chuyển" : (step3Done ? "Giao thành công" : "Chờ xuất kho"))
+                    </span>
+                </div>
+            </div>
+
+            <!-- Connector 3-4 -->
+            <div class="order-timeline-line @(step4Done ? "active" : "")"></div>
+
+            <!-- Step 4: Hoàn tất -->
+            <div class="order-timeline-step @(step4Done ? "completed" : "")">
+                <div class="order-timeline-node">
+                    @if (step4Done) { <i class="bi bi-patch-check-fill"></i> } else { <span>4</span> }
+                </div>
+                <div class="order-timeline-content">
+                    <strong class="d-block text-dark small">4. Hoàn Tất Đơn Hàng</strong>
+                    <span class="text-muted timeline-subtext">
+                        @(step4Done ? "Đã hoàn thành" : "Chờ khách nhận máy")
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @if (Model.Status == "CancelRequested")
@@ -184,7 +296,15 @@ else if (Model.Status == "Cancelled")
             <h6 class="fw-bold border-bottom pb-2 mb-3">Trạng Thái Đơn Hàng</h6>
             <div class="mb-3">
                 <span class="text-muted small d-block">Trạng thái hiện tại:</span>
-                @if (Model.Status == "Paid")
+                @if (Model.Status == "Delivered")
+                {
+                    <span class="badge bg-primary fs-6"><i class="bi bi-patch-check-fill me-1"></i>Đã giao hàng thành công (Delivered)</span>
+                }
+                else if (Model.Status == "Shipping")
+                {
+                    <span class="badge bg-info text-dark fs-6"><i class="bi bi-truck me-1"></i>Đang giao hàng (Shipping)</span>
+                }
+                else if (Model.Status == "Paid")
                 {
                     <span class="badge bg-success fs-6"><i class="bi bi-check-all me-1"></i>Đã thanh toán đủ 100% (Paid)</span>
                 }
@@ -199,6 +319,10 @@ else if (Model.Status == "Cancelled")
                 else if (Model.Status == "CancelRequested")
                 {
                     <span class="badge bg-warning text-dark fs-6"><i class="bi bi-clock-history me-1"></i>Chờ Admin duyệt yêu cầu hủy</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary fs-6">@Model.Status</span>
                 }
             </div>
 

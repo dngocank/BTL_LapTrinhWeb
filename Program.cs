@@ -39,7 +39,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.Events.OnRedirectToLogin = context =>
         {
-            if (context.Request.Path.StartsWithSegments("/Customer"))
+            if (context.Request.Path.StartsWithSegments("/Customer") || context.Request.Path.StartsWithSegments("/Cart"))
             {
                 context.Response.Redirect("/Customer/Login?ReturnUrl=" + Uri.EscapeDataString(context.Request.Path + context.Request.QueryString));
             }

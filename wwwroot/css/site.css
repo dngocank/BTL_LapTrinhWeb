@@ -565,6 +565,89 @@ a:hover {
     }
 }
 
+/* Hero Carousel Controls Styling & Layering */
+.cps-hero-slider .carousel-control-prev,
+.cps-hero-slider .carousel-control-next {
+    z-index: 10;
+    width: 42px;
+    height: 42px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    margin: 0 12px;
+    opacity: 0.85;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.cps-hero-slider .carousel-control-prev:hover,
+.cps-hero-slider .carousel-control-next:hover {
+    background: rgba(2, 132, 199, 0.9);
+    border-color: rgba(255, 255, 255, 0.5);
+    opacity: 1;
+    transform: translateY(-50%) scale(1.08);
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45);
+}
+
+.cps-hero-slider .carousel-control-prev-icon,
+.cps-hero-slider .carousel-control-next-icon {
+    width: 20px;
+    height: 20px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.cps-hero-slider .carousel-indicators {
+    z-index: 10;
+}
+
+.cps-hero-slider .carousel-indicators [data-bs-target] {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 5px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: none;
+    transition: all 0.25s ease;
+    cursor: pointer;
+}
+
+.cps-hero-slider .carousel-indicators .active {
+    width: 26px;
+    border-radius: 6px;
+    background-color: #38bdf8;
+    box-shadow: 0 2px 6px rgba(56, 189, 248, 0.5);
+}
+
+/* Săn Deal Button Styling */
+.btn-san-deal {
+    transition: all 0.2s ease;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: none;
+    color: #ffffff !important;
+}
+
+.btn-san-deal:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
+}
+
+/* Đặc quyền hội viên Button Styling */
+.btn-kitty-member-privilege {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-kitty-member-privilege:hover {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35) !important;
+}
+
 /* Side Banners */
 .cps-hero-side-banners {
     display: flex;
@@ -1912,3 +1995,356 @@ a:hover {
     background: #f8fafc;
     border-color: #e2e8f0;
 }
+
+/* ========================================================
+   WARRANTY & CUSTOMER SERVICE PORTAL (24hStore Standard)
+   ======================================================== */
+.warranty-hero-banner {
+    background: linear-gradient(135deg, #0e2254 0%, #0284c7 100%);
+}
+
+.warranty-policy-card {
+    border: 1px solid #e2e8f0;
+    transition: box-shadow 0.2s ease;
+}
+
+.warranty-policy-badge-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #e0f2fe;
+    color: #0284c7;
+    border-radius: 8px;
+    font-size: 18px;
+}
+
+.warranty-box {
+    border: 1px solid #e2e8f0;
+    transition: all 0.25s ease;
+    border-radius: 12px;
+}
+
+.warranty-box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.warranty-box-primary {
+    border-top: 4px solid #0284c7;
+}
+
+.warranty-box-success {
+    border-top: 4px solid #10b981;
+}
+
+.warranty-box-danger {
+    border-top: 4px solid #ef4444;
+}
+
+.warranty-box-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.warranty-rule-text {
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.warranty-section-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.warranty-subtext-alert {
+    background-color: #f0f9ff;
+    border-left: 4px solid #0284c7 !important;
+}
+
+.warranty-imei-btn {
+    border-color: #0284c7;
+    color: #0284c7;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.warranty-imei-btn:hover {
+    background-color: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+
+.warranty-card-item {
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.warranty-card-item:hover {
+    border-color: #0284c7;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.warranted-devices-card {
+    transition: all 0.2s ease;
+}
+
+.warranted-device-item {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.warranted-device-item:hover {
+    transform: translateY(-2px);
+    border-color: #10b981;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.12);
+}
+
+.warranted-device-img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    background-color: #f8fafc;
+}
+
+/* ========================================================
+   ADMIN AUTH & INTERNAL STAFF HEADER STYLING
+   ======================================================== */
+.admin-auth-header-notice {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 9999px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.customer-auth-header-notice {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 9999px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.auth-avatar-box {
+    width: 58px;
+    height: 58px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alert-auth-info {
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    color: #0369a1;
+}
+
+.btn-auth-gradient {
+    background: linear-gradient(135deg, #0e2254, #0284c7);
+    border: none;
+    color: #ffffff;
+}
+
+.btn-auth-gradient:hover {
+    background: linear-gradient(135deg, #071538, #0369a1);
+    color: #ffffff;
+}
+
+.auth-notice-box {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd !important;
+}
+
+.auth-notice-text {
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.auth-notice-subtext {
+    font-size: 0.78rem;
+}
+
+.admin-login-card-header {
+    background: linear-gradient(135deg, #071538 0%, #0e2254 60%, #0284c7 100%);
+    border-bottom: 3px solid #38bdf8;
+}
+
+.admin-login-icon-box {
+    width: 56px;
+    height: 56px;
+    background-color: #ffffff;
+    color: #0284c7;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-login-btn {
+    background: linear-gradient(135deg, #0e2254, #0284c7);
+    border: none;
+    color: #ffffff;
+}
+
+.admin-login-btn:hover {
+    background: linear-gradient(135deg, #071538, #0369a1);
+    color: #ffffff;
+}
+
+.admin-demo-badge-small {
+    font-size: 0.65rem;
+}
+
+.admin-brand-tag {
+    background-color: #0284c7;
+}
+
+.letter-spacing-2 {
+    letter-spacing: 4px;
+}
+
+.letter-spacing-3 {
+    letter-spacing: 8px;
+}
+
+.mobile-nav-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+/* ========================================================
+   CHECKOUT DELIVERY METHOD & CARRIER OPTIONS
+   ======================================================== */
+.delivery-method-card {
+    transition: all 0.2s ease;
+    background: #f8fafc;
+    border-color: #e2e8f0 !important;
+}
+
+.delivery-method-card:hover {
+    border-color: #0284c7 !important;
+    background: #f0f9ff;
+}
+
+.delivery-method-card.active {
+    border-color: #0284c7 !important;
+    background: #f0f9ff;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.carrier-option-card {
+    transition: all 0.2s ease;
+    background: #ffffff;
+    border-color: #e2e8f0 !important;
+}
+
+.carrier-option-card:hover {
+    border-color: #0284c7 !important;
+    background: #f8fafc;
+}
+
+.carrier-option-card.selected {
+    border-color: #0284c7 !important;
+    background: #f0f9ff;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+/* ========================================================
+   ORDER LOGISTICS TIMELINE
+   ======================================================== */
+.order-timeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    padding: 10px 0;
+}
+
+.order-timeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    z-index: 2;
+    min-width: 110px;
+}
+
+.order-timeline-node {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+    border: 3px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.order-timeline-step.completed .order-timeline-node {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.order-timeline-step.active .order-timeline-node {
+    background: linear-gradient(135deg, #0284c7, #0e2254);
+    color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.3);
+    animation: pulseNode 2s infinite;
+}
+
+@keyframes pulseNode {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+
+.order-timeline-line {
+    flex-grow: 1;
+    height: 4px;
+    background-color: #e2e8f0;
+    margin: 0 -15px 25px -15px;
+    z-index: 1;
+    transition: background-color 0.3s ease;
+}
+
+.order-timeline-line.active {
+    background: linear-gradient(90deg, #10b981, #0284c7);
+}
+
+.timeline-subtext {
+    font-size: 11px;
+}
+
+
+
+

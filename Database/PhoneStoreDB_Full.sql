@@ -25,6 +25,10 @@ CREATE DATABASE PhoneStoreDB;
 GO
 USE PhoneStoreDB;
 GO
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
 
 /* =====================================================================
    PHẦN 1. TẠO BẢNG DỮ LIỆU
@@ -215,7 +219,7 @@ CREATE TABLE Invoice (
     CONSTRAINT FK_Invoice_Customer  FOREIGN KEY (customer_id)  REFERENCES Customer(customer_id),
     CONSTRAINT FK_Invoice_Employee  FOREIGN KEY (employee_id)  REFERENCES Employee(employee_id),
     CONSTRAINT FK_Invoice_Promotion FOREIGN KEY (promotion_id) REFERENCES Promotion(promotion_id),
-    CONSTRAINT CK_Invoice_Status CHECK (status IN ('Pending', 'Paid', 'Cancelled', 'CancelRequested'))
+    CONSTRAINT CK_Invoice_Status CHECK (status IN ('Pending', 'Paid', 'Shipping', 'Delivered', 'Cancelled', 'CancelRequested'))
 );
 
 -- 15. Chi tiết hóa đơn bán hàng
@@ -278,16 +282,21 @@ CREATE TABLE Stock_Movement (
 
 -- 19. Đánh giá sản phẩm
 CREATE TABLE Review (
-    review_id     INT IDENTITY(1,1) NOT NULL,
-    product_id    INT               NOT NULL,
-    customer_name NVARCHAR(100)     NOT NULL,
-    phone         VARCHAR(15)       NULL,
-    rating        INT               NOT NULL CONSTRAINT DF_Review_Rating DEFAULT 5,
-    comment       NVARCHAR(1000)    NOT NULL,
-    reply         NVARCHAR(1000)    NULL,
-    created_at    DATETIME          NOT NULL CONSTRAINT DF_Review_Created DEFAULT GETDATE(),
+    review_id            INT IDENTITY(1,1) NOT NULL,
+    product_id           INT               NOT NULL,
+    customer_id          INT               NULL,
+    invoice_id           INT               NULL,
+    customer_name        NVARCHAR(100)     NOT NULL,
+    phone                VARCHAR(15)       NULL,
+    rating               INT               NOT NULL CONSTRAINT DF_Review_Rating DEFAULT 5,
+    comment              NVARCHAR(1000)    NOT NULL,
+    reply                NVARCHAR(1000)    NULL,
+    is_verified_purchase BIT               NOT NULL CONSTRAINT DF_Review_Verified DEFAULT 1,
+    created_at           DATETIME          NOT NULL CONSTRAINT DF_Review_Created DEFAULT GETDATE(),
     CONSTRAINT PK_Review PRIMARY KEY (review_id),
     CONSTRAINT FK_Review_Product FOREIGN KEY (product_id) REFERENCES Product(product_id) ON DELETE CASCADE,
+    CONSTRAINT FK_Review_Customer FOREIGN KEY (customer_id) REFERENCES Customer(customer_id),
+    CONSTRAINT FK_Review_Invoice FOREIGN KEY (invoice_id) REFERENCES Invoice(invoice_id),
     CONSTRAINT CK_Review_Rating CHECK (rating >= 1 AND rating <= 5)
 );
 
@@ -2002,15 +2011,6 @@ INSERT INTO Product (brand_id, category_id, product_name, import_price, selling_
 
 GO
 
--- Đánh giá sản phẩm mẫu
-INSERT INTO Review (product_id, customer_name, phone, rating, comment, reply, created_at) VALUES
-(1, N'Nguyễn Hoàng Long', '0912345678', 5, N'Máy đẹp nguyên seal chính hãng VN/A, cầm rất đầm tay, sạc Type-C quá tiện. Giao hàng siêu nhanh chỉ trong 1 tiếng!', N'KittyPhone cảm ơn bạn Long rất nhiều ạ! Chúc bạn có trải nghiệm tuyệt vời cùng máy mới nhé!', DATEADD(DAY, -5, GETDATE())),
-(1, N'Trần Thị Mai', '0987654321', 5, N'Đã nhận hàng tại KittyPhone, nhân viên tư vấn nhiệt tình, tặng kèm dán cường lực và ốp lưng rất ưng ý!', N'Cảm ơn chị Mai đã tin tưởng ủng hộ hệ thống KittyPhone ạ!', DATEADD(DAY, -2, GETDATE())),
-(13, N'Đỗ Minh Quân', '0909112233', 5, N'Màu Titan Sa Mạc quá xuất sắc, viền mỏng nhẹ hơn hẳn đời trước. Chụp hình zoom 5x nét căng.', NULL, DATEADD(DAY, -3, GETDATE())),
-(21, N'Lê Quốc Bảo', '0933445566', 5, N'Màn hình phẳng dùng sướng hơn nhiều, AI dịch thuật hội nghị rất chuẩn. Pin trâu dùng cả ngày không hết.', N'KittyPhone cảm ơn anh Bảo đã dành thời gian đánh giá sản phẩm ạ!', DATEADD(DAY, -1, GETDATE())),
-(22, N'Phạm Thuỳ Linh', '0977889900', 5, N'Thiết kế gập sang trọng đỉnh cao, đa nhiệm 2 màn hình phục vụ công việc cực kỳ tiện lợi.', NULL, DATEADD(HOUR, -6, GETDATE()));
-GO
-
 -- Phiếu nhập kho ban đầu
 INSERT INTO Import_Receipt (supplier_id, employee_id, import_date) VALUES
 (1, 3, '2026-05-01'),
@@ -2019,31 +2019,51 @@ INSERT INTO Import_Receipt (supplier_id, employee_id, import_date) VALUES
 INSERT INTO Import_Detail (import_id, product_id, quantity, import_price) VALUES
 (1, 13, 10, 26500000),
 (1, 14,  5, 22500000),
-(2, 21,  8, 27000000);
+(1,  1,  8, 24500000),
+(2, 21,  8, 27000000),
+(2, 22,  5, 36000000);
 
--- Hóa đơn mẫu & thanh toán
-INSERT INTO Invoice (customer_id, employee_id, invoice_date, shipping_address, payment_method_selected) VALUES
-(1, 2, '2026-05-10', N'123 Nguyễn Văn Cừ, Cần Thơ', 'Cash'),
-(2, 2, '2026-05-11', N'456 Lê Duẩn, Đà Nẵng', 'Bank Transfer');
+-- Hóa đơn mẫu & thanh toán (Khởi tạo Pending -> Tự động chuyển Paid qua Trigger sau khi nạp Payment)
+INSERT INTO Invoice (customer_id, employee_id, invoice_date, shipping_address, payment_method_selected, status) VALUES
+(1, 2, '2026-05-10', N'123 Nguyễn Văn Cừ, Cần Thơ', 'Cash', 'Pending'),
+(2, 2, '2026-05-11', N'456 Lê Duẩn, Đà Nẵng', 'Bank Transfer', 'Pending'),
+(3, 2, '2026-05-12', N'789 Nguyễn Huệ, Quận 1, TP. HCM', 'Bank Transfer', 'Pending'),
+(4, 2, '2026-05-13', N'101 Cầu Giấy, Hà Nội', 'Cash', 'Pending');
 
 INSERT INTO Invoice_Detail (invoice_id, product_id, quantity, unit_price) VALUES
 (1, 13, 1, 31490000),
-(2, 21, 1, 31990000);
+(2, 21, 1, 31990000),
+(3,  1, 1, 28990000),
+(4, 22, 1, 41990000);
 
 INSERT INTO Payment (invoice_id, payment_method, payment_date, amount) VALUES
 (1, 'Cash', '2026-05-10', 31490000),
-(2, 'Bank Transfer', '2026-05-11', 31990000);
+(2, 'Bank Transfer', '2026-05-11', 31990000),
+(3, 'Bank Transfer', '2026-05-12', 28990000),
+(4, 'Cash', '2026-05-13', 41990000);
 
 -- Quản lý Serial / IMEI
 INSERT INTO Product_Serial (product_id, imei_number, serial_number, status, warehouse_id) VALUES
 (13, '356789123456001', 'APL-IP16PM-001', 'Sold',     1),
 (21, '356789123456002', 'SMS-S25U-001',   'Sold',     1),
+( 1, '356789123456004', 'APL-IP15PM-001', 'Sold',     1),
+(22, '356789123456005', 'SMS-ZF6-001',    'Sold',     1),
 (14, '356789123456003', 'APL-IP16P-001',  'In Stock', 2);
 
--- Đăng ký bảo hành
+-- Đăng ký bảo hành thiết bị chính hãng
 INSERT INTO Warranty (invoice_detail_id, serial_id, warranty_start, warranty_end, warranty_note) VALUES
 (1, 1, '2026-05-10', '2027-05-10', N'Bảo hành chính hãng 12 tháng Apple VN/A'),
-(2, 2, '2026-05-11', '2027-05-11', N'Bảo hành chính hãng 12 tháng Samsung VN');
+(2, 2, '2026-05-11', '2027-05-11', N'Bảo hành chính hãng 12 tháng Samsung VN'),
+(3, 3, '2026-05-12', '2027-05-12', N'Bảo hành chính hãng 12 tháng Apple VN/A'),
+(4, 4, '2026-05-13', '2027-05-13', N'Bảo hành chính hãng 12 tháng Samsung Care+');
+
+-- Đánh giá sản phẩm mẫu (Khớp 100% với khách hàng & sản phẩm đã mua có hóa đơn thanh toán thành công - Verified Purchase)
+INSERT INTO Review (product_id, customer_name, phone, rating, comment, reply, customer_id, invoice_id, is_verified_purchase, created_at) VALUES
+(13, N'Nguyễn Văn An', '0911111111', 5, N'Màu Titan Sa Mạc quá xuất sắc, viền mỏng nhẹ hơn hẳn đời trước. Chụp hình zoom 5x nét căng.', N'KittyPhone cảm ơn anh An đã tin tưởng ủng hộ cửa hàng ạ!', 1, 1, 1, DATEADD(DAY, -5, GETDATE())),
+(1,  N'Lê Hoàng Nam',  '0933333333', 5, N'Máy đẹp nguyên seal chính hãng VN/A, cầm rất đầm tay, sạc Type-C quá tiện. Giao hàng siêu nhanh chỉ trong 1 tiếng!', N'KittyPhone cảm ơn bạn Nam rất nhiều ạ! Chúc bạn có trải nghiệm tuyệt vời cùng máy mới nhé!', 3, 3, 1, DATEADD(DAY, -3, GETDATE())),
+(21, N'Trần Thị Bích', '0922222222', 5, N'Màn hình phẳng dùng sướng hơn nhiều, AI dịch thuật hội nghị rất chuẩn. Pin trâu dùng cả ngày không hết.', N'KittyPhone cảm ơn chị Bích đã dành thời gian đánh giá sản phẩm ạ!', 2, 2, 1, DATEADD(DAY, -2, GETDATE())),
+(22, N'Phạm Gia Bảo',  '0944444444', 5, N'Thiết kế gập sang trọng đỉnh cao, đa nhiệm 2 màn hình phục vụ công việc cực kỳ tiện lợi.', NULL, 4, 4, 1, DATEADD(HOUR, -6, GETDATE()));
+GO
 
 -- Nhân viên kỹ thuật & Tài khoản đăng nhập
 INSERT INTO Employee (employee_name, phone, position) VALUES

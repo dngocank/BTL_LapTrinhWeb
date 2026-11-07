@@ -1,6 +1,7 @@
 @model BTL_PTTKYC.Models.LoginViewModel
 @{
     ViewData["Title"] = "Đăng Nhập Quản Trị Hệ Thống | KittyPhone";
+    ViewData["IsAdminAuthPage"] = true;
     Layout = "_Layout";
 }
 
@@ -9,9 +10,9 @@
         <div class="col-md-7 col-lg-5">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden border">
                 <!-- Header of Login Card -->
-                <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, #071538 0%, #0e2254 60%, #0284c7 100%); border-bottom: 3px solid #38bdf8;">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle p-3 mb-2 shadow-sm" style="width: 56px; height: 56px; color: #0284c7;">
-                        <i class="bi bi-shield-lock-fill fs-3" style="color: #0284c7;"></i>
+                <div class="p-4 text-center text-white admin-login-card-header">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle p-3 mb-2 shadow-sm admin-login-icon-box">
+                        <i class="bi bi-shield-lock-fill fs-3 text-primary"></i>
                     </div>
                     <h4 class="fw-bold mb-1">Cổng Quản Trị Nội Bộ</h4>
                     <p class="text-white-50 small mb-0">Hệ thống phân quyền dành cho Admin & Nhân viên KittyPhone</p>
@@ -47,7 +48,7 @@
                             <span asp-validation-for="Password" class="text-danger small"></span>
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold py-2 shadow-sm rounded-pill mb-3" style="background: linear-gradient(135deg, #0e2254, #0284c7); border: none;">
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold py-2 shadow-sm rounded-pill mb-3 admin-login-btn">
                             <i class="bi bi-box-arrow-in-right me-2"></i>ĐĂNG NHẬP HỆ THỐNG
                         </button>
                     </form>
@@ -56,22 +57,22 @@
                     <div class="p-3 bg-light rounded-3 border">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <span class="small fw-bold text-dark"><i class="bi bi-key-fill text-warning me-1"></i>Tài khoản test nhanh:</span>
-                            <span class="badge bg-secondary" style="font-size: 0.65rem;">Click để điền</span>
+                            <span class="badge bg-secondary admin-demo-badge-small">Click để điền</span>
                         </div>
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-primary text-start d-flex justify-content-between align-items-center" onclick="fillCreds('admin', 'admin123')">
-                                <span><strong style="color: #0284c7;">Admin</strong> (Toàn quyền quản trị)</span>
-                                <span class="badge" style="background-color: #0284c7;">admin / admin123</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary text-start d-flex justify-content-between align-items-center" onclick="window.fillCreds('admin', 'admin123')">
+                                <span><strong class="text-primary">Admin</strong> (Toàn quyền quản trị)</span>
+                                <span class="badge bg-primary">admin / admin123</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-info text-start d-flex justify-content-between align-items-center" onclick="fillCreds('sales', 'sales123')">
+                            <button type="button" class="btn btn-sm btn-outline-info text-start d-flex justify-content-between align-items-center" onclick="window.fillCreds('sales', 'sales123')">
                                 <span><strong class="text-dark">Sales</strong> (Nhân viên bán hàng)</span>
                                 <span class="badge bg-info text-dark">sales / sales123</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-warning text-start text-dark d-flex justify-content-between align-items-center" onclick="fillCreds('kho', 'kho123')">
+                            <button type="button" class="btn btn-sm btn-outline-warning text-start text-dark d-flex justify-content-between align-items-center" onclick="window.fillCreds('kho', 'kho123')">
                                 <span><strong class="text-dark">Warehouse</strong> (Quản lý kho hàng)</span>
                                 <span class="badge bg-warning text-dark">kho / kho123</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-success text-start text-dark d-flex justify-content-between align-items-center" onclick="fillCreds('kythuat', 'kythuat123')">
+                            <button type="button" class="btn btn-sm btn-outline-success text-start text-dark d-flex justify-content-between align-items-center" onclick="window.fillCreds('kythuat', 'kythuat123')">
                                 <span><strong class="text-success"><i class="bi bi-tools me-1"></i>Kỹ Thuật</strong> (Nhân viên kỹ thuật & BH)</span>
                                 <span class="badge bg-success">kythuat / kythuat123</span>
                             </button>
@@ -88,12 +89,3 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-<script>
-    function fillCreds(u, p) {
-        $('#inputUsername').val(u);
-        $('#inputPassword').val(p);
-    }
-</script>
-}

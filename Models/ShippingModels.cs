@@ -99,4 +99,17 @@ namespace BTL_PTTKYC.Models
         public bool IsInnerCity { get; set; }
         public string Region { get; set; } = "North"; // North, Central, South
     }
+
+    public class ShippingCalculationRequest
+    {
+        public decimal DistanceKm { get; set; } = 5.0m;
+        public string? Province { get; set; } = "Hà Nội";
+        public string? District { get; set; } = "Cầu Giấy";
+        public string? Address { get; set; }
+        public decimal SubTotal { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public string? CarrierId { get; set; }
+        public string? DeliveryMethod { get; set; } = "HomeDelivery";
+        public string? ShippingMethod { get; set; }
+    }
 }

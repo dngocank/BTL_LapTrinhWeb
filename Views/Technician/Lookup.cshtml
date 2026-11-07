@@ -1,239 +1,320 @@
 @model BTL_PTTKYC.Models.WarrantyLookupResultViewModel
 @{
-    ViewData["Title"] = "Tra Cứu Thông Tin Bảo Hành & IMEI";
-    Layout = "_AdminLayout";
+    ViewData["Title"] = "Tra Cứu Thông Tin Bảo Hành & IMEI | KittyPhone";
+    bool isStaff = User.IsInRole("Admin") || User.IsInRole("Technician") || User.IsInRole("Sales") || User.IsInRole("Warehouse");
+    Layout = isStaff ? "_AdminLayout" : "_Layout";
 }
 
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <div>
-                <h4 class="fw-bold mb-1">
-                    <i class="bi bi-search text-primary me-2"></i>Tra Cứu Bảo Hành & Lịch Sử Thiết Bị
-                </h4>
-                <span class="text-muted small">Tra cứu nhanh hạn bảo hành chính hãng, ngày kích hoạt và lịch sử sửa chữa theo IMEI, Serial hoặc SĐT</span>
-            </div>
-            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
-                <i class="bi bi-arrow-left me-1"></i>Về Trang Kỹ Thuật
-            </a>
-        </div>
+<div class="@(isStaff ? "" : "container py-4")">
+    @if (!isStaff)
+    {
+        <!-- Breadcrumb cho khách hàng -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-secondary"><i class="bi bi-house-door me-1"></i>Trang chủ</a></li>
+                @if (User.IsInRole("Customer"))
+                {
+                    <li class="breadcrumb-item"><a asp-controller="Customer" asp-action="Warranty" class="text-secondary">Tracking Bảo Hành</a></li>
+                }
+                <li class="breadcrumb-item active" aria-current="page">Tra Cứu IMEI & Sổ Bảo Hành</li>
+            </ol>
+        </nav>
+    }
 
-        <!-- Search Box -->
-        <div class="bg-white p-4 rounded-3 border shadow-sm mb-4">
-            <form asp-action="Lookup" method="get">
-                <div class="row g-2 align-items-center">
-                    <div class="col-md-9">
-                        <div class="input-group input-group-lg">
-                            <span class="input-group-text bg-light"><i class="bi bi-upc-scan text-primary"></i></span>
-                            <input type="text" name="query" class="form-control fs-6" 
-                                   placeholder="Nhập số IMEI (15 số), mã Serial hoặc số điện thoại khách hàng..." 
-                                   value="@Model.SearchQuery" autofocus required />
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold fs-6">
-                            <i class="bi bi-search me-1"></i>Tra Cứu Ngay
-                        </button>
-                    </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h4 class="fw-bold mb-1">
+                        <i class="bi bi-search text-primary me-2"></i>Tra Cứu Bảo Hành & Lịch Sử Thiết Bị
+                    </h4>
+                    <span class="text-muted small">Tra cứu nhanh hạn bảo hành chính hãng, ngày kích hoạt và lịch sử sửa chữa theo IMEI, Serial hoặc SĐT</span>
                 </div>
-            </form>
-            <div class="d-flex gap-2 mt-2 pt-2 text-muted small">
-                <span>Gợi ý tra cứu nhanh:</span>
-                <a href="@Url.Action("Lookup", new { query = "358912345678901" })" class="text-decoration-none">IMEI Mẫu 1</a>
-                <span>•</span>
-                <a href="@Url.Action("Lookup", new { query = "358912345678902" })" class="text-decoration-none">IMEI Mẫu 2</a>
-                <span>•</span>
-                <a href="@Url.Action("Lookup", new { query = "0901234567" })" class="text-decoration-none">SĐT: 0901234567</a>
-            </div>
-        </div>
-
-        @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
-        {
-            @if (Model.Found)
-            {
-                <!-- Result Overview Card -->
-                <div class="bg-white rounded-3 border shadow-sm overflow-hidden mb-4">
-                    <div class="p-3 @(Model.IsEligible ? "bg-success text-white" : "bg-danger text-white") d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi @(Model.IsEligible ? "bi-patch-check-fill" : "bi-exclamation-triangle-fill") fs-4"></i>
-                            <h5 class="fw-bold mb-0">
-                                @(Model.IsEligible ? "THIẾT BỊ ĐỦ ĐIỀU KIỆN BẢO HÀNH CHÍNH HÃNG" : "THIẾT BỊ ĐÃ HẾT HẠN BẢO HÀNH (ÁP DỤNG SỬA CHỮA DỊCH VỤ)")
-                            </h5>
-                        </div>
-                        <a asp-action="Create" asp-route-imei="@(Model.ImeiNumber ?? Model.SearchQuery)" class="btn btn-light btn-sm rounded-pill fw-bold text-dark">
-                            <i class="bi bi-plus-circle me-1"></i>Lập Phiếu Bảo Hành Cho Máy Này
-                        </a>
-                    </div>
-
-                    <div class="p-4">
-                        <div class="row g-4">
-                            <!-- Device info -->
-                            <div class="col-md-6 border-end">
-                                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
-                                    <i class="bi bi-phone me-1 text-primary"></i>Thông Tin Sản Phẩm
-                                </h6>
-                                <table class="table table-sm table-borderless mb-0">
-                                    <tr>
-                                        <td class="text-muted" style="width: 140px;">Tên sản phẩm:</td>
-                                        <td class="fw-bold text-dark">@(Model.ProductName ?? "Không rõ")</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted">Hãng sản xuất:</td>
-                                        <td><span class="badge bg-secondary">@(Model.BrandName ?? "Chính hãng")</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted">Số IMEI:</td>
-                                        <td><code class="fw-bold text-primary fs-6">@(Model.ImeiNumber ?? "---")</code></td>
-                                    </tr>
-                                    @if (!string.IsNullOrEmpty(Model.SerialNumber))
-                                    {
-                                        <tr>
-                                            <td class="text-muted">Số Serial:</td>
-                                            <td class="font-monospace">@Model.SerialNumber</td>
-                                        </tr>
-                                    }
-                                    @if (Model.InvoiceId.HasValue)
-                                    {
-                                        <tr>
-                                            <td class="text-muted">Hóa đơn mua:</td>
-                                            <td><strong>#HD-@Model.InvoiceId</strong> (@(Model.InvoiceDate?.ToString("dd/MM/yyyy") ?? ""))</td>
-                                        </tr>
-                                    }
-                                </table>
-                            </div>
-
-                            <!-- Warranty info -->
-                            <div class="col-md-6">
-                                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
-                                    <i class="bi bi-shield-check me-1 text-primary"></i>Thông Tin Thời Hạn Bảo Hành
-                                </h6>
-                                <table class="table table-sm table-borderless mb-0">
-                                    <tr>
-                                        <td class="text-muted" style="width: 150px;">Ngày kích hoạt BH:</td>
-                                        <td class="fw-semibold">@(Model.WarrantyStart?.ToString("dd/MM/yyyy") ?? "Chưa kích hoạt")</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted">Ngày kết thúc BH:</td>
-                                        <td class="fw-semibold">@(Model.WarrantyEnd?.ToString("dd/MM/yyyy") ?? "Chưa kích hoạt")</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted">Thời gian còn lại:</td>
-                                        <td>
-                                            @if (Model.IsEligible)
-                                            {
-                                                <span class="badge bg-success fs-6">Còn @Model.DaysLeft ngày</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-danger fs-6">Đã hết hạn</span>
-                                            }
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted">Chủ sở hữu:</td>
-                                        <td><strong>@(Model.CustomerName ?? "Khách lẻ")</strong> (@(Model.CustomerPhone ?? ""))</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- History of Previous Tickets -->
-                <div class="bg-white p-4 rounded-3 border shadow-sm">
-                    <h5 class="fw-bold mb-3">
-                        <i class="bi bi-clock-history text-primary me-2"></i>Lịch Sử Các Lần Tiếp Nhận & Sửa Chữa (@Model.TicketHistory.Count lần)
-                    </h5>
-
-                    @if (Model.TicketHistory.Count == 0)
+                <div>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Technician"))
                     {
-                        <div class="text-center py-4 text-muted small">
-                            <i class="bi bi-shield-smile display-6 text-success d-block mb-2"></i>
-                            Thiết bị này chưa từng qua sửa chữa hoặc bảo hành tại hệ thống.
-                        </div>
+                        <a asp-controller="Technician" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+                            <i class="bi bi-arrow-left me-1"></i>Về Trang Kỹ Thuật
+                        </a>
+                    }
+                    else if (User.IsInRole("Customer"))
+                    {
+                        <a asp-controller="Customer" asp-action="Warranty" class="btn btn-outline-primary rounded-pill px-3 fw-bold">
+                            <i class="bi bi-arrow-left me-1"></i>Về Trang Bảo Hành Của Tôi
+                        </a>
                     }
                     else
                     {
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Mã Phiếu</th>
-                                        <th>Ngày Nhận</th>
-                                        <th>Hiện Tượng Lỗi</th>
-                                        <th>Biện Pháp Xử Lý</th>
-                                        <th>Kỹ Thuật Viên</th>
-                                        <th>Chi Phí</th>
-                                        <th>Trạng Thái</th>
-                                        <th class="text-center">Thao Tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var h in Model.TicketHistory)
-                                    {
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+                            <i class="bi bi-house-door me-1"></i>Về Trang Chủ
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Search Box -->
+            <div class="bg-white p-4 rounded-3 border shadow-sm mb-4">
+                <form asp-action="Lookup" method="get">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-9">
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light"><i class="bi bi-upc-scan text-primary"></i></span>
+                                <input type="text" name="query" class="form-control fs-6" 
+                                       placeholder="Nhập số IMEI (15 số), mã Serial hoặc số điện thoại khách hàng..." 
+                                       value="@Model.SearchQuery" autofocus required />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold fs-6">
+                                <i class="bi bi-search me-1"></i>Tra Cứu Ngay
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <div class="d-flex gap-2 mt-2 pt-2 text-muted small flex-wrap">
+                    <span>Gợi ý tra cứu nhanh:</span>
+                    <a href="@Url.Action("Lookup", new { query = "358912345678901" })" class="text-decoration-none">IMEI Mẫu 1</a>
+                    <span>•</span>
+                    <a href="@Url.Action("Lookup", new { query = "358912345678902" })" class="text-decoration-none">IMEI Mẫu 2</a>
+                    <span>•</span>
+                    <a href="@Url.Action("Lookup", new { query = "0901234567" })" class="text-decoration-none">SĐT: 0901234567</a>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
+            {
+                @if (Model.Found)
+                {
+                    <!-- Result Overview Card -->
+                    <div class="bg-white rounded-3 border shadow-sm overflow-hidden mb-4">
+                        <div class="p-3 @(Model.IsEligible ? "bg-success text-white" : "bg-danger text-white") d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi @(Model.IsEligible ? "bi-patch-check-fill" : "bi-exclamation-triangle-fill") fs-4"></i>
+                                <h5 class="fw-bold mb-0">
+                                    @(Model.IsEligible ? "THIẾT BỊ ĐỦ ĐIỀU KIỆN BẢO HÀNH CHÍNH HÃNG" : "THIẾT BỊ ĐÃ HẾT HẠN BẢO HÀNH (ÁP DỤNG SỬA CHỮA DỊCH VỤ)")
+                                </h5>
+                            </div>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Technician"))
+                            {
+                                <a asp-controller="Technician" asp-action="Create" asp-route-imei="@(Model.ImeiNumber ?? Model.SearchQuery)" class="btn btn-light btn-sm rounded-pill fw-bold text-dark">
+                                    <i class="bi bi-plus-circle me-1"></i>Lập Phiếu Bảo Hành Cho Máy Này
+                                </a>
+                            }
+                            else if (User.IsInRole("Customer"))
+                            {
+                                <a asp-controller="Customer" asp-action="Profile" class="btn btn-light btn-sm rounded-pill fw-bold text-dark">
+                                    <i class="bi bi-house-door-fill me-1"></i>Đăng Ký BH Tại Nhà
+                                </a>
+                            }
+                        </div>
+
+                        <div class="p-4">
+                            <div class="row g-4">
+                                <!-- Device info -->
+                                <div class="col-md-6 border-end">
+                                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                        <i class="bi bi-phone me-1 text-primary"></i>Thông Tin Sản Phẩm
+                                    </h6>
+                                    <table class="table table-sm table-borderless mb-0">
                                         <tr>
+                                            <td class="text-muted" style="width: 140px;">Tên sản phẩm:</td>
+                                            <td class="fw-bold text-dark">@(Model.ProductName ?? "Không rõ")</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Hãng sản xuất:</td>
+                                            <td><span class="badge bg-secondary">@(Model.BrandName ?? "Chính hãng")</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Số IMEI:</td>
+                                            <td><code class="fw-bold text-primary fs-6">@(Model.ImeiNumber ?? "---")</code></td>
+                                        </tr>
+                                        @if (!string.IsNullOrEmpty(Model.SerialNumber))
+                                        {
+                                            <tr>
+                                                <td class="text-muted">Số Serial:</td>
+                                                <td class="font-monospace">@Model.SerialNumber</td>
+                                            </tr>
+                                        }
+                                        @if (Model.InvoiceId.HasValue)
+                                        {
+                                            <tr>
+                                                <td class="text-muted">Hóa đơn mua:</td>
+                                                <td><strong>#HD-@Model.InvoiceId</strong> (@(Model.InvoiceDate?.ToString("dd/MM/yyyy") ?? ""))</td>
+                                            </tr>
+                                        }
+                                    </table>
+                                </div>
+
+                                <!-- Warranty info -->
+                                <div class="col-md-6">
+                                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                        <i class="bi bi-shield-check me-1 text-primary"></i>Thông Tin Thời Hạn Bảo Hành
+                                    </h6>
+                                    <table class="table table-sm table-borderless mb-0">
+                                        <tr>
+                                            <td class="text-muted" style="width: 150px;">Ngày kích hoạt BH:</td>
+                                            <td class="fw-semibold">@(Model.WarrantyStart?.ToString("dd/MM/yyyy") ?? "Chưa kích hoạt")</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Ngày kết thúc BH:</td>
+                                            <td class="fw-semibold">@(Model.WarrantyEnd?.ToString("dd/MM/yyyy") ?? "Chưa kích hoạt")</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Thời gian còn lại:</td>
                                             <td>
-                                                <a asp-action="Detail" asp-route-id="@h.TicketId" class="fw-bold text-primary text-decoration-none">
-                                                    @h.TicketCode
-                                                </a>
-                                            </td>
-                                            <td>@h.ReceiveDate.ToString("dd/MM/yyyy")</td>
-                                            <td class="small" style="max-width: 200px;">@h.CustomerIssue</td>
-                                            <td class="small" style="max-width: 200px;">@(h.RepairAction ?? "---")</td>
-                                            <td>@(h.TechnicianName ?? "---")</td>
-                                            <td>
-                                                <div class="fw-bold @(h.RepairCost == 0 ? "text-success" : "text-danger")">
-                                                    @h.RepairCost.ToString("N0")đ
-                                                </div>
-                                                @if (h.RepairCost > 0)
+                                                @if (Model.IsEligible)
                                                 {
-                                                    @if (h.PaymentStatus == "Paid")
+                                                    <span class="badge bg-success fs-6">Còn @Model.DaysLeft ngày</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger fs-6">Đã hết hạn</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Chủ sở hữu:</td>
+                                            <td><strong>@(Model.CustomerName ?? "Khách lẻ")</strong> (@(Model.CustomerPhone ?? ""))</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- History of Previous Tickets -->
+                    <div class="bg-white p-4 rounded-3 border shadow-sm">
+                        <h5 class="fw-bold mb-3">
+                            <i class="bi bi-clock-history text-primary me-2"></i>Lịch Sử Các Lần Tiếp Nhận & Sửa Chữa (@Model.TicketHistory.Count lần)
+                        </h5>
+
+                        @if (Model.TicketHistory.Count == 0)
+                        {
+                            <div class="text-center py-4 text-muted small">
+                                <i class="bi bi-shield-smile display-6 text-success d-block mb-2"></i>
+                                Thiết bị này chưa từng qua sửa chữa hoặc bảo hành tại hệ thống.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Mã Phiếu</th>
+                                            <th>Ngày Nhận</th>
+                                            <th>Hiện Tượng Lỗi</th>
+                                            <th>Biện Pháp Xử Lý</th>
+                                            <th>Kỹ Thuật Viên</th>
+                                            <th>Chi Phí</th>
+                                            <th>Trạng Thái</th>
+                                            <th class="text-center">Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var h in Model.TicketHistory)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    @if (User.IsInRole("Admin") || User.IsInRole("Technician"))
                                                     {
-                                                        <span class="badge bg-success-subtle text-success border border-success" style="font-size: 0.68rem;">Đã TT</span>
+                                                        <a asp-controller="Technician" asp-action="Detail" asp-route-id="@h.TicketId" class="fw-bold text-primary text-decoration-none">
+                                                            @h.TicketCode
+                                                        </a>
+                                                    }
+                                                    else if (User.IsInRole("Customer"))
+                                                    {
+                                                        <a asp-controller="Customer" asp-action="WarrantyDetail" asp-route-id="@h.TicketId" class="fw-bold text-primary text-decoration-none">
+                                                            @h.TicketCode
+                                                        </a>
                                                     }
                                                     else
                                                     {
-                                                        <span class="badge bg-danger-subtle text-danger border border-danger" style="font-size: 0.68rem;">Chưa TT</span>
+                                                        <span class="fw-bold text-primary font-monospace">@h.TicketCode</span>
                                                     }
-                                                }
-                                            </td>
-                                            <td><span class="badge @h.StatusBadgeClass">@h.StatusVietnamese</span></td>
-                                            <td class="text-center">
-                                                <div class="d-flex justify-content-center gap-1">
-                                                    <a asp-action="Detail" asp-route-id="@h.TicketId" class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    @if (h.RepairCost > 0 && h.PaymentStatus != "Paid")
+                                                </td>
+                                                <td>@h.ReceiveDate.ToString("dd/MM/yyyy")</td>
+                                                <td class="small" style="max-width: 200px;">@h.CustomerIssue</td>
+                                                <td class="small" style="max-width: 200px;">@(h.RepairAction ?? "---")</td>
+                                                <td>@(h.TechnicianName ?? "---")</td>
+                                                <td>
+                                                    <div class="fw-bold @(h.RepairCost == 0 ? "text-success" : "text-danger")">
+                                                        @h.RepairCost.ToString("N0")đ
+                                                    </div>
+                                                    @if (h.RepairCost > 0)
                                                     {
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Quét mã QR ZaloPay thanh toán"
-                                                                onclick="showLookupQrModal('@h.TicketCode', @((long)h.RepairCost))">
-                                                            <i class="bi bi-qr-code-scan"></i>
-                                                        </button>
+                                                        @if (h.PaymentStatus == "Paid")
+                                                        {
+                                                            <span class="badge bg-success-subtle text-success border border-success" style="font-size: 0.68rem;">Đã TT</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-danger-subtle text-danger border border-danger" style="font-size: 0.68rem;">Chưa TT</span>
+                                                        }
                                                     }
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </div>
+                                                </td>
+                                                <td><span class="badge @h.StatusBadgeClass">@h.StatusVietnamese</span></td>
+                                                <td class="text-center">
+                                                    <div class="d-flex justify-content-center gap-1">
+                                                        @if (User.IsInRole("Admin") || User.IsInRole("Technician"))
+                                                        {
+                                                            <a asp-controller="Technician" asp-action="Detail" asp-route-id="@h.TicketId" class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                        }
+                                                        else if (User.IsInRole("Customer"))
+                                                        {
+                                                            <a asp-controller="Customer" asp-action="WarrantyDetail" asp-route-id="@h.TicketId" class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                        }
+                                                        @if (h.RepairCost > 0 && h.PaymentStatus != "Paid")
+                                                        {
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Quét mã QR ZaloPay thanh toán"
+                                                                    onclick="window.showLookupQrModal('@h.TicketCode', @((long)h.RepairCost))">
+                                                                <i class="bi bi-qr-code-scan"></i>
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="bg-white p-5 rounded-3 border shadow-sm text-center">
+                        <i class="bi bi-question-circle display-4 text-warning d-block mb-3"></i>
+                        <h5 class="fw-bold">Không tìm thấy dữ liệu bảo hành cho từ khóa: "@Model.SearchQuery"</h5>
+                        <p class="text-muted small mb-4">
+                            Thiết bị có thể chưa từng mua tại hệ thống hoặc khách hàng đem máy ngoài vào sửa dịch vụ.
+                        </p>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Technician"))
+                        {
+                            <a asp-controller="Technician" asp-action="Create" asp-route-imei="@Model.SearchQuery" class="btn btn-primary rounded-pill px-4 fw-bold">
+                                <i class="bi bi-plus-circle me-1"></i>Tiếp Nhận Sửa Chữa Dịch Vụ Mới
+                            </a>
+                        }
+                        else if (User.IsInRole("Customer"))
+                        {
+                            <a asp-controller="Customer" asp-action="Profile" class="btn btn-primary rounded-pill px-4 fw-bold">
+                                <i class="bi bi-house-door-fill me-1"></i>Đăng Ký Tiếp Nhận Tận Nhà
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                                <i class="bi bi-house-door me-1"></i>Về Trang Chủ KittyPhone
+                            </a>
+                        }
+                    </div>
+                }
             }
-            else
-            {
-                <div class="bg-white p-5 rounded-3 border shadow-sm text-center">
-                    <i class="bi bi-question-circle display-4 text-warning d-block mb-3"></i>
-                    <h5 class="fw-bold">Không tìm thấy dữ liệu bảo hành cho từ khóa: "@Model.SearchQuery"</h5>
-                    <p class="text-muted small mb-4">
-                        Thiết bị có thể chưa từng mua tại hệ thống hoặc khách hàng đem máy ngoài vào sửa dịch vụ.
-                    </p>
-                    <a asp-action="Create" asp-route-imei="@Model.SearchQuery" class="btn btn-primary rounded-pill px-4 fw-bold">
-                        <i class="bi bi-plus-circle me-1"></i>Tiếp Nhận Sửa Chữa Dịch Vụ Mới
-                    </a>
-                </div>
-            }
-        }
+        </div>
     </div>
 </div>
 
@@ -281,17 +362,3 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-<script>
-    function showLookupQrModal(ticketCode, amount) {
-        const syntax = 'BH ' + ticketCode;
-        const qrUrl = 'https://img.vietqr.io/image/970454-0396166509-compact2.png?amount=' + amount + '&addInfo=' + encodeURIComponent(syntax) + '&accountName=DUONG%20NGOC%20ANH';
-        $('#imgModalLookupQr').attr('src', qrUrl);
-        $('#txtModalLookupAmount').text(Math.round(amount).toLocaleString('vi-VN') + 'đ');
-        $('#badgeModalLookupSyntax').text(syntax);
-        const modal = new bootstrap.Modal(document.getElementById('modalLookupQr'));
-        modal.show();
-    }
-</script>
-}

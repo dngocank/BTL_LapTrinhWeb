@@ -6,7 +6,7 @@ let sql;
 let pool = null;
 let isConnected = false;
 
-const DB_SERVER = process.env.DB_SERVER || 'LAPTOP-G24FF8RE\\SQLEXPRESS';
+const DB_SERVER = process.env.DB_SERVER || 'localhost';
 const DB_NAME = process.env.DB_NAME || 'PhoneStoreDB';
 const DB_USER = process.env.DB_USER || '';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';

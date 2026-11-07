@@ -11,6 +11,15 @@
         }
         catch { }
     }
+
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    bool isAdminAuthPage = (currentController == "Account" && (currentAction == "Login" || currentAction == "Verify2FA")) || (ViewData["IsAdminAuthPage"] as bool? == true);
+    bool isCustomerAuthPage = (currentController == "Customer" && (currentAction == "Login" || currentAction == "Register" || currentAction == "VerifyOtp")) || (ViewData["IsCustomerAuthPage"] as bool? == true);
+    bool isAuthPage = isAdminAuthPage || isCustomerAuthPage;
+
+    bool isInternalStaff = User.Identity != null && User.Identity.IsAuthenticated && 
+        (User.IsInRole("Admin") || User.IsInRole("Sales") || User.IsInRole("Warehouse") || User.IsInRole("Technician"));
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -34,22 +43,25 @@
     <link rel="stylesheet" href="~/css/kittybot.css" asp-append-version="true" />
 </head>
 <body>
-    <!-- Top Announcement Bar (KittyPhone Campaign Ribbon) -->
-    <div class="cps-top-ribbon d-none d-md-block">
-        <div class="container d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-3">
-                <span class="cps-ribbon-badge"><i class="bi bi-gift-fill me-1"></i>Mừng Khai Trương - Deal Thật Hời</span>
-                <span>Lên đời tiết kiệm - Trợ giá đến <strong>2.5 triệu</strong></span>
-                <span class="d-none d-lg-inline">Sản phẩm <strong>Chính hãng - Xuất VAT đầy đủ</strong></span>
-                <span class="d-none d-xl-inline">Giao nhanh - Miễn phí toàn quốc</span>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <a href="tel:0396166509" class="text-white text-decoration-none">
-                    <i class="bi bi-telephone-fill me-1"></i>Hotline: <strong>0396166509</strong>
-                </a>
+    @if (!isAuthPage)
+    {
+        <!-- Top Announcement Bar (KittyPhone Campaign Ribbon) -->
+        <div class="cps-top-ribbon d-none d-md-block">
+            <div class="container d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="cps-ribbon-badge"><i class="bi bi-gift-fill me-1"></i>Mừng Khai Trương - Deal Thật Hời</span>
+                    <span>Lên đời tiết kiệm - Trợ giá đến <strong>2.5 triệu</strong></span>
+                    <span class="d-none d-lg-inline">Sản phẩm <strong>Chính hãng - Xuất VAT đầy đủ</strong></span>
+                    <span class="d-none d-xl-inline">Giao nhanh - Miễn phí toàn quốc</span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="tel:0396166509" class="text-white text-decoration-none">
+                        <i class="bi bi-telephone-fill me-1"></i>Hotline: <strong>0396166509</strong>
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
+    }
 
     <!-- Main Header (KittyPhone Ocean Blue Bar) -->
     <header class="cps-main-header">
@@ -60,82 +72,250 @@
                     <span class="cps-logo-text"><i class="bi bi-phone-vibrate text-info me-1"></i>Kitty<span class="cps-logo-s">Phone</span></span>
                 </a>
 
-                <!-- Category Button (Dropdown) -->
-                <div class="dropdown d-none d-lg-block">
-                    <button class="cps-btn-pill dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-grid-fill"></i>
-                        <span>Danh mục</span>
-                    </button>
-                    <ul class="dropdown-menu shadow-lg border-0 rounded-3 py-2 cps-category-dropdown">
-                        <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="1"><i class="bi bi-phone me-2 text-danger"></i>Điện thoại</a></li>
-                        <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="2"><i class="bi bi-tablet me-2 text-primary"></i>Máy tính bảng</a></li>
-                        <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="4"><i class="bi bi-smartwatch me-2 text-warning"></i>Đồng hồ, Smartwatch</a></li>
-                        <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="3"><i class="bi bi-headphones me-2 text-info"></i>Tai nghe, Loa</a></li>
-                        <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="3"><i class="bi bi-plug me-2 text-success"></i>Phụ kiện chính hãng</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item py-2 fw-semibold text-danger" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#modalTradeIn"><i class="bi bi-arrow-repeat me-2"></i>Thu cũ đổi mới trợ giá 2.5Tr</a></li>
-                    </ul>
-                </div>
+                @if (isAdminAuthPage)
+                {
+                    <!-- Admin Portal Banner Label -->
+                    <div class="d-none d-md-flex align-items-center">
+                        <span class="admin-auth-header-notice">
+                            <i class="bi bi-shield-lock-fill text-warning fs-6"></i>
+                            <span>Cổng Đăng Nhập Quản Trị Hệ Thống Nội Bộ</span>
+                        </span>
+                    </div>
+                }
+                else if (isCustomerAuthPage)
+                {
+                    <!-- Customer Portal Banner Label -->
+                    <div class="d-none d-md-flex align-items-center">
+                        <span class="customer-auth-header-notice">
+                            <i class="bi bi-person-badge-fill text-info fs-6"></i>
+                            <span>Cổng Thành Viên & Hội Viên KittyMember</span>
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <!-- Category Button (Dropdown) -->
+                    <div class="dropdown d-none d-lg-block">
+                        <button class="cps-btn-pill dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-grid-fill"></i>
+                            <span>Danh mục</span>
+                        </button>
+                        <ul class="dropdown-menu shadow-lg border-0 rounded-3 py-2 cps-category-dropdown">
+                            <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="1"><i class="bi bi-phone me-2 text-danger"></i>Điện thoại</a></li>
+                            <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="2"><i class="bi bi-tablet me-2 text-primary"></i>Máy tính bảng</a></li>
+                            <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="4"><i class="bi bi-smartwatch me-2 text-warning"></i>Đồng hồ, Smartwatch</a></li>
+                            <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="3"><i class="bi bi-headphones me-2 text-info"></i>Tai nghe, Loa</a></li>
+                            <li><a class="dropdown-item py-2 fw-semibold" asp-controller="Home" asp-action="Index" asp-route-categoryId="3"><i class="bi bi-plug me-2 text-success"></i>Phụ kiện chính hãng</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2 fw-semibold text-danger" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#modalTradeIn"><i class="bi bi-arrow-repeat me-2"></i>Thu cũ đổi mới trợ giá 2.5Tr</a></li>
+                        </ul>
+                    </div>
 
-
-
-                <!-- Search Bar -->
-                <div class="cps-search-wrap">
-                    <form asp-controller="Home" asp-action="Index" method="get" class="cps-search-form">
-                        <i class="bi bi-search cps-search-icon"></i>
-                        <input type="text" name="keyword" class="cps-search-input" 
-                               placeholder="Bạn cần tìm gì hôm nay?" 
-                               value="@Context.Request.Query["keyword"]" />
-                    </form>
-                </div>
+                    <!-- Search Bar -->
+                    <div class="cps-search-wrap">
+                        <form asp-controller="Home" asp-action="Index" method="get" class="cps-search-form">
+                            <i class="bi bi-search cps-search-icon"></i>
+                            <input type="text" name="keyword" class="cps-search-input" 
+                                   placeholder="Bạn cần tìm gì hôm nay?" 
+                                   value="@Context.Request.Query["keyword"]" />
+                        </form>
+                    </div>
+                }
 
                 <!-- Header Actions -->
                 <div class="cps-header-actions">
-                    <!-- Hotline -->
-                    <a href="tel:0396166509" class="cps-header-action d-none d-xl-flex text-decoration-none">
-                        <i class="bi bi-telephone"></i>
-                        <div class="d-flex flex-column text-start">
-                            <span class="cps-action-sub">Gọi mua hàng</span>
-                            <span class="cps-action-main">0396166509</span>
-                        </div>
-                    </a>
-
-
-                    <!-- Tra cứu đơn hàng -->
-                    <a asp-controller="Customer" asp-action="Orders" class="cps-header-action d-none d-md-flex text-decoration-none">
-                        <i class="bi bi-truck"></i>
-                        <div class="d-flex flex-column text-start">
-                            <span class="cps-action-sub">Tra cứu</span>
-                            <span class="cps-action-main">Đơn hàng</span>
-                        </div>
-                    </a>
-
-                    <!-- Tra cứu bảo hành -->
-                    <a asp-controller="Customer" asp-action="Warranty" class="cps-header-action d-none d-lg-flex text-decoration-none">
-                        <i class="bi bi-shield-check"></i>
-                        <div class="d-flex flex-column text-start">
-                            <span class="cps-action-sub">Tracking</span>
-                            <span class="cps-action-main">Bảo hành</span>
-                        </div>
-                    </a>
-
-                    <!-- Giỏ hàng -->
-                    <a asp-controller="Cart" asp-action="Index" class="cps-header-action cps-cart-action text-decoration-none">
-                        <div class="position-relative">
-                            <i class="bi bi-bag"></i>
-                            <span class="cps-cart-badge" id="cartBadgeCount">@cartCount</span>
-                        </div>
-                        <div class="d-flex flex-column text-start d-none d-sm-flex">
-                            <span class="cps-action-sub">Giỏ</span>
-                            <span class="cps-action-main">hàng</span>
-                        </div>
-                    </a>
-
-                    <!-- KittyMember / Đăng nhập tài khoản -->
-                    @if (User.Identity != null && User.Identity.IsAuthenticated)
+                    @if (isAdminAuthPage)
                     {
-                        @if (User.IsInRole("Customer"))
+                        <!-- 1. TRANG ĐĂNG NHẬP NỘI BỘ: Ẩn hoàn toàn giỏ hàng, hotline, tra cứu -->
+                        <a asp-controller="Home" asp-action="Index" class="cps-header-action text-decoration-none">
+                            <i class="bi bi-shop"></i>
+                            <div class="d-flex flex-column text-start">
+                                <span class="cps-action-sub">Xem cửa hàng</span>
+                                <span class="cps-action-main">Trang Chủ</span>
+                            </div>
+                        </a>
+                    }
+                    else if (isCustomerAuthPage)
+                    {
+                        <!-- 2. TRANG ĐĂNG NHẬP / ĐĂNG KÝ KHÁCH HÀNG: Giao diện tinh gọn, tập trung -->
+                        <a asp-controller="Home" asp-action="Index" class="cps-header-action text-decoration-none">
+                            <i class="bi bi-shop"></i>
+                            <div class="d-flex flex-column text-start">
+                                <span class="cps-action-sub">Xem cửa hàng</span>
+                                <span class="cps-action-main">Trang Chủ</span>
+                            </div>
+                        </a>
+                        <a href="tel:0396166509" class="cps-header-action d-none d-md-flex text-decoration-none">
+                            <i class="bi bi-telephone"></i>
+                            <div class="d-flex flex-column text-start">
+                                <span class="cps-action-sub">Hotline CSKH</span>
+                                <span class="cps-action-main">0396166509</span>
+                            </div>
+                        </a>
+                    }
+                    else if (isInternalStaff)
+                    {
+                        <!-- 2. VAI TRÒ NỘI BỘ (Admin, Sales, Warehouse, Technician): Ẩn giỏ hàng & nút mua sắm khách lẻ, thay bằng menu nghiệp vụ -->
+                        @if (User.IsInRole("Admin"))
                         {
+                            <a asp-controller="Admin" asp-action="Index" class="cps-header-action text-decoration-none">
+                                <i class="bi bi-speedometer2 text-info"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Bảng điều khiển</span>
+                                    <span class="cps-action-main">Admin</span>
+                                </div>
+                            </a>
+                            <a asp-controller="Admin" asp-action="Accounts" class="cps-header-action d-none d-md-flex text-decoration-none">
+                                <i class="bi bi-people-fill text-warning"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Quản lý</span>
+                                    <span class="cps-action-main">Tài Khoản</span>
+                                </div>
+                            </a>
+                        }
+                        else if (User.IsInRole("Sales"))
+                        {
+                            <a asp-controller="Sales" asp-action="Orders" class="cps-header-action text-decoration-none">
+                                <i class="bi bi-receipt-cutoff text-success"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Quản lý</span>
+                                    <span class="cps-action-main">Đơn Hàng</span>
+                                </div>
+                            </a>
+                            <a asp-controller="Sales" asp-action="Reviews" class="cps-header-action d-none d-md-flex text-decoration-none">
+                                <i class="bi bi-chat-heart text-info"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Phản hồi</span>
+                                    <span class="cps-action-main">Reviews</span>
+                                </div>
+                            </a>
+                        }
+                        else if (User.IsInRole("Warehouse"))
+                        {
+                            <a asp-controller="Warehouse" asp-action="Index" class="cps-header-action text-decoration-none">
+                                <i class="bi bi-box-seam-fill text-warning"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Quản lý</span>
+                                    <span class="cps-action-main">Kho Hàng</span>
+                                </div>
+                            </a>
+                            <a asp-controller="Warehouse" asp-action="Import" class="cps-header-action d-none d-md-flex text-decoration-none">
+                                <i class="bi bi-upc-scan text-info"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Nhập xuất</span>
+                                    <span class="cps-action-main">Mã IMEI</span>
+                                </div>
+                            </a>
+                        }
+                        else if (User.IsInRole("Technician"))
+                        {
+                            <a asp-controller="Technician" asp-action="Workbench" class="cps-header-action text-decoration-none">
+                                <i class="bi bi-tools text-primary"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Bàn làm việc</span>
+                                    <span class="cps-action-main">Kỹ Thuật</span>
+                                </div>
+                            </a>
+                            <a asp-controller="Technician" asp-action="Lookup" class="cps-header-action d-none d-md-flex text-decoration-none">
+                                <i class="bi bi-search text-info"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Tra cứu</span>
+                                    <span class="cps-action-main">Sổ IMEI</span>
+                                </div>
+                            </a>
+                        }
+
+                        <!-- Dropdown Nhân Viên Nội Bộ -->
+                        <div class="dropdown">
+                            <button class="cps-header-action dropdown-toggle border-0" type="button" data-bs-toggle="dropdown">
+                                <div class="cps-user-avatar bg-warning text-dark fw-bold">
+                                    @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "N")
+                                </div>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">
+                                        @(User.IsInRole("Admin") ? "Admin" : User.IsInRole("Sales") ? "Sales" : User.IsInRole("Warehouse") ? "Thủ Kho" : "Kỹ Thuật")
+                                    </span>
+                                    <span class="cps-action-main text-truncate" style="max-width: 90px;">@User.Identity?.Name</span>
+                                </div>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 py-2">
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <li><a class="dropdown-item fw-bold text-danger" asp-controller="Admin" asp-action="Index"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Accounts"><i class="bi bi-people me-2"></i>Quản lý Tài khoản</a></li>
+                                }
+                                @if (User.IsInRole("Sales") || User.IsInRole("Admin"))
+                                {
+                                    <li><a class="dropdown-item" asp-controller="Sales" asp-action="Orders"><i class="bi bi-receipt me-2"></i>Quản lý Đơn hàng</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Sales" asp-action="Reviews"><i class="bi bi-chat-heart me-2"></i>Xem Reviews</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Sales" asp-action="Products"><i class="bi bi-tag me-2"></i>Nội dung bán hàng</a></li>
+                                }
+                                @if (User.IsInRole("Warehouse") || User.IsInRole("Admin"))
+                                {
+                                    <li><a class="dropdown-item" asp-controller="Warehouse" asp-action="Index"><i class="bi bi-box-seam me-2"></i>Quản lý Kho</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Warehouse" asp-action="Import"><i class="bi bi-upc-scan me-2"></i>Nhập kho IMEI</a></li>
+                                }
+                                @if (User.IsInRole("Technician") || User.IsInRole("Admin"))
+                                {
+                                    <li><a class="dropdown-item text-primary fw-semibold" asp-controller="Technician" asp-action="Workbench"><i class="bi bi-tools me-2"></i>Bàn làm việc KTV</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Technician" asp-action="Lookup"><i class="bi bi-search me-2"></i>Tra cứu bảo hành & IMEI</a></li>
+                                }
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-controller="Account" asp-action="Logout" method="post" class="px-2">
+                                        <button type="submit" class="btn btn-sm btn-light text-danger w-100 text-start fw-semibold">
+                                            <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất nội bộ
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- 3. KHÁCH HÀNG HOẶC CHƯA ĐĂNG NHẬP: Hiển thị đầy đủ dịch vụ khách lẻ -->
+                        <!-- Hotline -->
+                        <a href="tel:0396166509" class="cps-header-action d-none d-xl-flex text-decoration-none">
+                            <i class="bi bi-telephone"></i>
+                            <div class="d-flex flex-column text-start">
+                                <span class="cps-action-sub">Gọi mua hàng</span>
+                                <span class="cps-action-main">0396166509</span>
+                            </div>
+                        </a>
+
+                        @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer"))
+                        {
+                            <!-- Tra cứu đơn hàng -->
+                            <a asp-controller="Customer" asp-action="Orders" class="cps-header-action d-none d-md-flex text-decoration-none">
+                                <i class="bi bi-truck"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Tra cứu</span>
+                                    <span class="cps-action-main">Đơn hàng</span>
+                                </div>
+                            </a>
+
+                            <!-- Tra cứu bảo hành -->
+                            <a asp-controller="Customer" asp-action="Warranty" class="cps-header-action d-none d-lg-flex text-decoration-none">
+                                <i class="bi bi-shield-check"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Tracking</span>
+                                    <span class="cps-action-main">Bảo hành</span>
+                                </div>
+                            </a>
+
+                            <!-- Giỏ hàng -->
+                            <a asp-controller="Cart" asp-action="Index" class="cps-header-action cps-cart-action text-decoration-none">
+                                <div class="position-relative">
+                                    <i class="bi bi-bag"></i>
+                                    <span class="cps-cart-badge" id="cartBadgeCount">@cartCount</span>
+                                </div>
+                                <div class="d-flex flex-column text-start d-none d-sm-flex">
+                                    <span class="cps-action-sub">Giỏ</span>
+                                    <span class="cps-action-main">hàng</span>
+                                </div>
+                            </a>
+
+                            <!-- Dropdown KittyMember -->
                             <div class="dropdown">
                                 <button class="cps-header-action dropdown-toggle border-0" type="button" data-bs-toggle="dropdown">
                                     <div class="cps-user-avatar">
@@ -163,53 +343,46 @@
                         }
                         else
                         {
-                            <div class="dropdown">
-                                <button class="cps-header-action dropdown-toggle border-0" type="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-shield-lock-fill"></i>
-                                    <div class="d-flex flex-column text-start">
-                                        <span class="cps-action-sub">Quản trị</span>
-                                        <span class="cps-action-main text-truncate" style="max-width: 80px;">@User.Identity.Name</span>
-                                    </div>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 py-2">
-                                    @if (User.IsInRole("Admin"))
-                                    {
-                                        <li><a class="dropdown-item fw-bold text-danger" asp-controller="Admin" asp-action="Index"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Accounts"><i class="bi bi-people me-2"></i>Quản lý Tài khoản</a></li>
-                                    }
-                                    @if (User.IsInRole("Sales") || User.IsInRole("Admin"))
-                                    {
-                                        <li><a class="dropdown-item" asp-controller="Sales" asp-action="Orders"><i class="bi bi-receipt me-2"></i>Quản lý Đơn hàng</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Sales" asp-action="Reviews"><i class="bi bi-chat-heart me-2"></i>Xem Reviews</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Sales" asp-action="Products"><i class="bi bi-tag me-2"></i>Nội dung bán hàng</a></li>
-                                    }
-                                    @if (User.IsInRole("Warehouse") || User.IsInRole("Admin"))
-                                    {
-                                        <li><a class="dropdown-item" asp-controller="Warehouse" asp-action="Index"><i class="bi bi-box-seam me-2"></i>Quản lý Kho</a></li>
-                                    }
-                                    @if (User.IsInRole("Technician") || User.IsInRole("Admin"))
-                                    {
-                                        <li><a class="dropdown-item text-primary fw-semibold" asp-controller="Technician" asp-action="Index"><i class="bi bi-tools me-2"></i>Kỹ thuật & Bảo hành</a></li>
-                                    }
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <form asp-controller="Account" asp-action="Logout" method="post" class="px-2">
-                                            <button type="submit" class="btn btn-sm btn-light text-danger w-100 text-start fw-semibold"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </div>
+                            <!-- KHÁCH VÃNG LAI: Bấm vào giỏ hàng hoặc menu bất kì của bản thân phải đưa về trang đăng nhập -->
+                            <!-- Tra cứu đơn hàng -->
+                            <a asp-controller="Customer" asp-action="Login" asp-route-returnUrl="/Customer/Orders" class="cps-header-action d-none d-md-flex text-decoration-none" title="Đăng nhập để tra cứu đơn hàng">
+                                <i class="bi bi-truck"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Tra cứu</span>
+                                    <span class="cps-action-main">Đơn hàng</span>
+                                </div>
+                            </a>
+
+                            <!-- Tra cứu bảo hành -->
+                            <a asp-controller="Customer" asp-action="Login" asp-route-returnUrl="/Customer/Warranty" class="cps-header-action d-none d-lg-flex text-decoration-none" title="Đăng nhập để tracking bảo hành">
+                                <i class="bi bi-shield-check"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Tracking</span>
+                                    <span class="cps-action-main">Bảo hành</span>
+                                </div>
+                            </a>
+
+                            <!-- Giỏ hàng -->
+                            <a asp-controller="Customer" asp-action="Login" asp-route-returnUrl="/Cart" class="cps-header-action cps-cart-action text-decoration-none" title="Đăng nhập để xem giỏ hàng">
+                                <div class="position-relative">
+                                    <i class="bi bi-bag"></i>
+                                    <span class="cps-cart-badge" id="cartBadgeCount">0</span>
+                                </div>
+                                <div class="d-flex flex-column text-start d-none d-sm-flex">
+                                    <span class="cps-action-sub">Giỏ</span>
+                                    <span class="cps-action-main">hàng</span>
+                                </div>
+                            </a>
+
+                            <!-- KittyMember / Đăng nhập tài khoản khách hàng -->
+                            <a asp-controller="Customer" asp-action="Login" class="cps-header-action cps-smember-btn text-decoration-none">
+                                <i class="bi bi-person-circle"></i>
+                                <div class="d-flex flex-column text-start">
+                                    <span class="cps-action-sub">Thành viên</span>
+                                    <span class="cps-action-main">Đăng nhập</span>
+                                </div>
+                            </a>
                         }
-                    }
-                    else
-                    {
-                        <a asp-controller="Customer" asp-action="Login" class="cps-header-action cps-smember-btn text-decoration-none">
-                            <i class="bi bi-person-circle"></i>
-                            <div class="d-flex flex-column text-start">
-                                <span class="cps-action-sub">Thành viên</span>
-                                <span class="cps-action-main">Đăng nhập</span>
-                            </div>
-                        </a>
                     }
                 </div>
             </div>
@@ -556,37 +729,63 @@
         </div>
     </div>
 
-    <!-- Mobile Bottom Navigation Bar -->
-    <div class="mobile-bottom-nav">
-        <a asp-controller="Home" asp-action="Index" class="d-flex flex-column align-items-center text-decoration-none text-danger">
-            <i class="bi bi-house-door-fill fs-5"></i>
-            <span style="font-size: 0.7rem; font-weight: 600;">Trang chủ</span>
-        </a>
-        <a asp-controller="Home" asp-action="Index" asp-fragment="productCatalog" class="d-flex flex-column align-items-center text-decoration-none text-secondary">
-            <i class="bi bi-grid fs-5"></i>
-            <span style="font-size: 0.7rem; font-weight: 600;">Danh mục</span>
-        </a>
-        <a asp-controller="Cart" asp-action="Index" class="d-flex flex-column align-items-center text-decoration-none text-secondary position-relative">
-            <i class="bi bi-bag fs-5"></i>
-            <span id="mobileCartBadgeCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; @(cartCount > 0 ? "" : "display: none;")">@cartCount</span>
-            <span style="font-size: 0.7rem; font-weight: 600;">Giỏ hàng</span>
-        </a>
-        <a href="tel:0396166509" class="d-flex flex-column align-items-center text-decoration-none text-secondary">
-            <i class="bi bi-telephone fs-5"></i>
-            <span style="font-size: 0.7rem; font-weight: 600;">Hotline</span>
-        </a>
-        <a asp-controller="Customer" asp-action="Login" class="d-flex flex-column align-items-center text-decoration-none text-secondary">
-            <i class="bi bi-person fs-5"></i>
-            <span style="font-size: 0.7rem; font-weight: 600;">KittyMember</span>
-        </a>
-    </div>
+    @if (!isAuthPage && !isInternalStaff)
+    {
+        <!-- Mobile Bottom Navigation Bar (Dành riêng cho Khách Hàng) -->
+        <div class="mobile-bottom-nav">
+            <a asp-controller="Home" asp-action="Index" class="d-flex flex-column align-items-center text-decoration-none text-danger">
+                <i class="bi bi-house-door-fill fs-5"></i>
+                <span class="mobile-nav-label">Trang chủ</span>
+            </a>
+            <a asp-controller="Home" asp-action="Index" asp-fragment="productCatalog" class="d-flex flex-column align-items-center text-decoration-none text-secondary">
+                <i class="bi bi-grid fs-5"></i>
+                <span class="mobile-nav-label">Danh mục</span>
+            </a>
+            @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer"))
+            {
+                <a asp-controller="Cart" asp-action="Index" class="d-flex flex-column align-items-center text-decoration-none text-secondary position-relative">
+                    <i class="bi bi-bag fs-5"></i>
+                    <span id="mobileCartBadgeCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@cartCount</span>
+                    <span class="mobile-nav-label">Giỏ hàng</span>
+                </a>
+                <a href="tel:0396166509" class="d-flex flex-column align-items-center text-decoration-none text-secondary">
+                    <i class="bi bi-telephone fs-5"></i>
+                    <span class="mobile-nav-label">Hotline</span>
+                </a>
+                <a asp-controller="Customer" asp-action="Profile" class="d-flex flex-column align-items-center text-decoration-none text-secondary">
+                    <i class="bi bi-person fs-5"></i>
+                    <span class="mobile-nav-label">KittyMember</span>
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Customer" asp-action="Login" asp-route-returnUrl="/Cart" class="d-flex flex-column align-items-center text-decoration-none text-secondary position-relative">
+                    <i class="bi bi-bag fs-5"></i>
+                    <span id="mobileCartBadgeCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+                    <span class="mobile-nav-label">Giỏ hàng</span>
+                </a>
+                <a href="tel:0396166509" class="d-flex flex-column align-items-center text-decoration-none text-secondary">
+                    <i class="bi bi-telephone fs-5"></i>
+                    <span class="mobile-nav-label">Hotline</span>
+                </a>
+                <a asp-controller="Customer" asp-action="Login" class="d-flex flex-column align-items-center text-decoration-none text-secondary">
+                    <i class="bi bi-person fs-5"></i>
+                    <span class="mobile-nav-label">Đăng nhập</span>
+                </a>
+            }
+        </div>
+    }
 
     <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <!-- KittyBot AI Floating Widget JS -->
-    <script src="~/js/kittybot.js" asp-append-version="true"></script>
+    @if (!isAuthPage)
+    {
+        <!-- KittyBot AI Floating Widget JS -->
+        <script src="~/js/kittybot.js" asp-append-version="true"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

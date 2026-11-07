@@ -1,6 +1,7 @@
 @model BTL_PTTKYC.Models.CustomerVerifyOtpViewModel
 @{
     ViewData["Title"] = "Xác Thực OTP Tài Khoản | KittyPhone";
+    ViewData["IsCustomerAuthPage"] = true;
 }
 
 <div class="auth-wrapper py-5">
@@ -8,7 +9,7 @@
         <div class="auth-card">
             <!-- Header -->
             <div class="auth-card-header">
-                <div class="d-inline-flex p-3 rounded-circle bg-white text-primary mb-3 shadow-sm" style="width: 58px; height: 58px; align-items: center; justify-content: center;">
+                <div class="d-inline-flex p-3 rounded-circle bg-white text-primary mb-3 shadow-sm auth-avatar-box">
                     <i class="bi bi-shield-lock-fill fs-2 text-primary"></i>
                 </div>
                 <h4 class="fw-bold mb-1 text-white">Xác Thực SĐT & Email</h4>
@@ -59,11 +60,11 @@
                             <span class="fs-4 fw-bold font-monospace tracking-widest text-dark bg-white px-3 py-1 rounded border">
                                 @Model.SimulatedOtp
                             </span>
-                            <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3" onclick="document.getElementById('otpInput').value = '@Model.SimulatedOtp';">
+                            <button type="button" id="btnAutoFillOtp" data-otp="@Model.SimulatedOtp" class="btn btn-outline-success btn-sm rounded-pill px-3">
                                 <i class="bi bi-clipboard-check me-1"></i>Tự động điền
                             </button>
                         </div>
-                        <span class="d-block mt-2 small text-muted" style="font-size: 0.78rem;">
+                        <span class="d-block mt-2 small text-muted auth-notice-subtext">
                             (Đã gửi đồng thời đến SĐT <strong>@Model.PhoneOrEmail</strong> và Email. Hiệu lực 15 phút)
                         </span>
                     </div>
@@ -75,12 +76,12 @@
 
                     <div class="mb-3 text-center">
                         <label class="form-label fw-bold text-dark small mb-2 text-uppercase">NHẬP MÃ OTP 6 CHỮ SỐ</label>
-                        <input asp-for="OtpCode" id="otpInput" class="form-control text-center fs-2 font-monospace fw-bold tracking-widest" 
-                               maxlength="6" placeholder="------" autofocus autocomplete="one-time-code" style="letter-spacing: 0.4em;" />
+                        <input asp-for="OtpCode" id="otpInput" class="form-control text-center fs-2 font-monospace fw-bold tracking-widest otp-input-tracking" 
+                               maxlength="6" placeholder="------" autofocus autocomplete="one-time-code" />
                         <span asp-validation-for="OtpCode" class="text-danger small d-block mt-1"></span>
                     </div>
 
-                    <button type="submit" class="btn text-white w-100 py-2 rounded-pill fw-bold shadow-sm mb-3" style="background: linear-gradient(135deg, #0e2254, #0284c7); border: none;">
+                    <button type="submit" class="btn text-white w-100 py-2 rounded-pill fw-bold shadow-sm mb-3 btn-auth-gradient">
                         <i class="bi bi-check2-circle me-1"></i>XÁC NHẬN & HOÀN TẤT
                     </button>
                 </form>

@@ -539,6 +539,10 @@
 
     function addToCart(productId) {
         $.post('/Cart/Add', { productId: productId, quantity: 1 }, function(res) {
+            if (res.requireLogin && res.redirectUrl) {
+                window.location.href = res.redirectUrl;
+                return;
+            }
             if (res.success) {
                 if (window.updateCartBadges) {
                     window.updateCartBadges(res.count);
@@ -575,6 +579,10 @@
         checked.each(function() {
             const pid = $(this).val();
             $.post('/Cart/Add', { productId: pid, quantity: 1 }, function(res) {
+                if (res.requireLogin && res.redirectUrl) {
+                    window.location.href = res.redirectUrl;
+                    return;
+                }
                 completed++;
                 if (completed === checked.length) {
                     if (window.updateCartBadges && res.count) {

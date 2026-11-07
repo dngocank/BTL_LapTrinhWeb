@@ -1,6 +1,7 @@
 @model BTL_PTTKYC.Models.CustomerRegisterViewModel
 @{
     ViewData["Title"] = "Đăng Ký Tài Khoản KittyMember | KittyPhone";
+    ViewData["IsCustomerAuthPage"] = true;
 }
 
 <div class="auth-wrapper py-5">
@@ -8,7 +9,7 @@
         <div class="auth-card">
             <!-- Header -->
             <div class="auth-card-header">
-                <div class="d-inline-flex p-3 rounded-circle bg-white text-primary mb-3 shadow-sm" style="width: 58px; height: 58px; align-items: center; justify-content: center;">
+                <div class="d-inline-flex p-3 rounded-circle bg-white text-primary mb-3 shadow-sm auth-avatar-box">
                     <i class="bi bi-person-plus-fill fs-2 text-primary"></i>
                 </div>
                 <h4 class="fw-bold mb-1 text-white">Tạo Tài Khoản KittyMember</h4>
@@ -26,12 +27,12 @@
                     </div>
                 }
 
-                <div class="p-3 mb-4 rounded-3 border" style="background: #f0f9ff; border-color: #bae6fd !important;">
+                <div class="p-3 mb-4 rounded-3 border auth-notice-box">
                     <div class="d-flex align-items-center gap-2 text-primary fw-bold small mb-1">
                         <i class="bi bi-shield-check fs-5"></i>
                         <span>Bảo Mật Xác Thực Chống Gian Lận</span>
                     </div>
-                    <p class="small text-muted mb-0" style="font-size: 0.8rem; line-height: 1.4;">
+                    <p class="small text-muted mb-0 auth-notice-text">
                         Sau khi bấm "Tiếp Tục", hệ thống sẽ gửi <strong>mã OTP xác thực (6 số)</strong> đến cả Số điện thoại và Email của bạn để hoàn tất mở tài khoản KittyMember.
                     </p>
                 </div>
@@ -99,7 +100,7 @@
                         <span asp-validation-for="Address" class="text-danger small"></span>
                     </div>
 
-                    <button type="submit" class="btn text-white w-100 py-2 rounded-pill fw-bold shadow-sm mb-3" style="background: linear-gradient(135deg, #0e2254, #0284c7); border: none;">
+                    <button type="submit" class="btn text-white w-100 py-2 rounded-pill fw-bold shadow-sm mb-3 btn-auth-gradient">
                         <i class="bi bi-arrow-right-circle me-1"></i>TIẾP TỤC NHẬN MÃ OTP
                     </button>
                 </form>
