@@ -27,6 +27,10 @@ scratch/
 cloudflared.exe
 *.log
 docs/
+docs/diagrams/
+diagrams/
+*.drawio
+*.drawio.xml
 
 # Agent Documentation & Handoff (Local only)
 DOCS.md
