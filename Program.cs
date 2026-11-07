@@ -17,9 +17,10 @@ builder.Services.AddScoped<CustomerRepository>();
 builder.Services.AddScoped<PromotionRepository>();
 builder.Services.AddScoped<WarrantyRepository>();
 
-// Register Custom Business Services (Shipping Calculator & Notification Engine)
+// Register Custom Business Services (Shipping Calculator & Notification Engine & Badge Counter)
 builder.Services.AddScoped<BTL_PTTKYC.Services.IShippingService, BTL_PTTKYC.Services.ShippingService>();
 builder.Services.AddScoped<BTL_PTTKYC.Services.INotificationService, BTL_PTTKYC.Services.NotificationService>();
+builder.Services.AddScoped<BTL_PTTKYC.Services.IBadgeService, BTL_PTTKYC.Services.BadgeService>();
 
 // Add Distributed Memory Cache & Session for Cart
 builder.Services.AddDistributedMemoryCache();

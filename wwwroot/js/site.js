@@ -48,6 +48,19 @@ function showCartToast(message, isSuccess = true) {
         }, 3500);
     }
 }
+
+// 2. Nút sao chép văn bản vào bộ nhớ tạm (Clipboard)
+$(document).on('click', '.btn-copy-clipboard', function (e) {
+    e.preventDefault();
+    var txt = $(this).data('copy') || $(this).attr('data-copy');
+    if (txt) {
+        navigator.clipboard.writeText(txt).then(function() {
+            showCartToast('Đã sao chép vào bộ nhớ tạm: ' + txt, true);
+        }).catch(function() {
+            showCartToast('Vui lòng chọn và sao chép thủ công: ' + txt, false);
+        });
+    }
+});
 window.showCartToast = showCartToast;
 
 // 2. Cập Nhật Số Lượng Badge Giỏ Hàng (Header & Mobile Nav)
@@ -638,6 +651,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Khởi tạo tương tác trang Thanh toán (Checkout) nếu đang ở trang /Cart/Checkout
     initCheckoutPage();
+
+    // Khởi tạo hệ thống cập nhật Badge thông báo đỏ (Zalo / Messenger Style)
+    initRealtimeBadgeNotifications();
 });
 
 /* ========================================================
@@ -670,6 +686,9 @@ function initCheckoutPage() {
             $('#boxStorePickupDetails').slideDown();
             $('#boxHomeDeliverySection').slideUp();
 
+            // Cập nhật thông tin mô tả thanh toán 100% phù hợp nhận máy tại showroom
+            $('#txtBankTransferDesc').text('Thanh toán toàn bộ 100% qua mã QR ngân hàng hoặc ZaloPay. Đơn hàng sẽ được chuẩn bị sẵn sàng tại showroom để quý khách ghé nhận máy ngay sau khi nhận tiền.');
+
             // Lấy tại cửa hàng: phí ship = 0đ, ẩn/bỏ bắt buộc nhập địa chỉ nhà riêng
             shippingFeeAmount = 0;
             $('#hdnShippingFee').val(0);
@@ -685,6 +704,9 @@ function initCheckoutPage() {
             $('#btnMethodStore').removeClass('active');
             $('#boxStorePickupDetails').slideUp();
             $('#boxHomeDeliverySection').slideDown();
+
+            // Cập nhật thông tin mô tả thanh toán 100% cho giao hàng tận nhà
+            $('#txtBankTransferDesc').text('Thanh toán toàn bộ 100% qua mã QR ngân hàng hoặc ZaloPay. Đơn hàng sẽ được duyệt và xuất kho giao siêu tốc ngay sau khi nhận tiền.');
 
             // Giao hàng tận nhà: khôi phục bắt buộc địa chỉ nhận hàng
             $('#txtAddressInput').attr('required', 'required');
@@ -879,12 +901,14 @@ function initCheckoutPage() {
 
     function updatePaymentSummary() {
         var val = $('input[name="PaymentMethod"]:checked').val();
+        var isStorePickup = ($('#hdnShippingMethod').val() === 'StorePickup' || $('#hdnDeliveryMethod').val() === 'StorePickup');
+
         if (val === 'COD') {
             $('#boxBankQrPreview').slideUp();
             $('#summaryDepositLabel').text('Mức cọc cần thanh toán (50%):');
             var dep = Math.round(currentTotal * 0.5 / 10000) * 10000;
             $('#summaryDepositValue').text(formatVND(dep));
-            $('#summaryRemainingLabel').text('Còn lại khi nhận hàng:');
+            $('#summaryRemainingLabel').text(isStorePickup ? 'Còn lại khi nhận máy tại showroom:' : 'Còn lại khi nhận hàng:');
             $('#summaryRemainingValue').text(formatVND(currentTotal - dep));
             $('#txtDeposit50').text(formatVND(dep).replace('đ', ''));
             $('#txtRemaining50').text(formatVND(currentTotal - dep).replace('đ', ''));
@@ -896,7 +920,7 @@ function initCheckoutPage() {
 
             $('#summaryDepositLabel').text('Thanh toán toàn bộ (100%):');
             $('#summaryDepositValue').text(formatVND(currentTotal));
-            $('#summaryRemainingLabel').text('Còn lại khi nhận hàng:');
+            $('#summaryRemainingLabel').text(isStorePickup ? 'Còn lại khi nhận máy tại showroom:' : 'Còn lại khi nhận hàng:');
             $('#summaryRemainingValue').text('0đ (Đã thanh toán đủ)');
         } else if (val === 'Installment') {
             $('#boxBankQrPreview').slideUp();
@@ -1009,5 +1033,72 @@ function initCheckoutPage() {
     recalculateShipping();
     updatePaymentSummary();
 }
+
+/* ========================================================
+   REALTIME BADGE NOTIFICATIONS (ZALO / MESSENGER STYLE)
+   ======================================================== */
+function initRealtimeBadgeNotifications() {
+    function updateBadge(selector, count, showPulse) {
+        var el = $(selector);
+        if (el.length === 0) return;
+        if (count > 0) {
+            el.text(count > 99 ? '99+' : count).show();
+            if (showPulse) {
+                el.addClass('badge-pulse');
+            } else {
+                el.removeClass('badge-pulse');
+            }
+        } else {
+            el.hide().removeClass('badge-pulse');
+        }
+    }
+
+    function fetchBadgeCounts() {
+        $.ajax({
+            url: '/api/notifications/badge-counts',
+            type: 'GET',
+            dataType: 'json',
+            success: function (res) {
+                if (res && res.success && res.data) {
+                    var d = res.data;
+
+                    // 1. Quản lý nội bộ (Admin / Sales / Warehouse / Tech)
+                    var ordersNeedingAction = (d.ordersNeedingAction !== undefined) ? d.ordersNeedingAction : (d.pendingOrders + d.cancelRequestedOrders);
+                    updateBadge('#badgeSidebarOrders', ordersNeedingAction, ordersNeedingAction > 0);
+                    updateBadge('#badgeSidebarReviews', d.unrepliedReviews, false);
+                    updateBadge('#badgeSidebarLowStock', d.lowStockCount, false);
+                    updateBadge('#badgeSidebarWorkbench', d.activeWarrantyTickets, false);
+                    updateBadge('#badgeSidebarTickets', d.activeWarrantyTickets, false);
+                    updateBadge('#badgeTopbarAlerts', d.totalAdminAlerts, d.totalAdminAlerts > 0);
+
+                    // 2. Khách hàng cá nhân (Customer)
+                    var orderTitle = 'Bạn có ' + (d.customerActiveOrders || 0) + ' đơn hàng đang chờ duyệt/xử lý';
+                    $('#badgeCustomerOrders').attr('title', orderTitle);
+                    updateBadge('#badgeCustomerOrders', d.customerActiveOrders, d.customerActiveOrders > 0);
+
+                    var warrantyCount = (d.customerActiveWarranty && d.customerActiveWarranty > 0) 
+                        ? d.customerActiveWarranty 
+                        : (d.customerWarrantedDevices || 0);
+                    var warrantyTitle = (d.customerActiveWarranty && d.customerActiveWarranty > 0)
+                        ? ('Bạn có ' + d.customerActiveWarranty + ' phiếu sửa chữa đang tiếp nhận/xử lý')
+                        : ('Bạn có ' + (d.customerWarrantedDevices || 0) + ' thiết bị đang còn hạn bảo hành chính hãng');
+                    $('#badgeCustomerWarranty').attr('title', warrantyTitle);
+                    updateBadge('#badgeCustomerWarranty', warrantyCount, d.customerActiveWarranty > 0);
+
+                    if (d.customerCartCount !== undefined) {
+                        updateBadge('#cartBadgeCount', d.customerCartCount, false);
+                    }
+                }
+            },
+            error: function () {
+                // Giữ trạng thái hiện tại khi mất kết nối tạm thời
+            }
+        });
+    }
+
+    // Polling định kỳ mỗi 25 giây để đồng bộ số lượng thông báo
+    setInterval(fetchBadgeCounts, 25000);
+}
+
 
 

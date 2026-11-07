@@ -236,12 +236,13 @@ namespace BTL_PTTKYC.Controllers
 
         // 7. LOOKUP WARRANTY BY IMEI / SERIAL / PHONE (CÔNG KHAI CHO KHÁCH HÀNG TRA CỨU)
         [AllowAnonymous]
-        public IActionResult Lookup(string? query)
+        public IActionResult Lookup(string? query, string? keyword)
         {
+            var search = !string.IsNullOrWhiteSpace(query) ? query : keyword;
             var res = new WarrantyLookupResultViewModel();
-            if (!string.IsNullOrWhiteSpace(query))
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                res = _warrantyRepo.LookupWarranty(query);
+                res = _warrantyRepo.LookupWarranty(search);
             }
             return View(res);
         }

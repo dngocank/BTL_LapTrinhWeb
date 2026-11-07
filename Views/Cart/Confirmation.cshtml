@@ -31,27 +31,96 @@
                 <span>Thông tin đặt hàng</span>
             </div>
             <div class="cps-step-divider"></div>
-            <div class="cps-step-item active">
-                <span class="cps-step-num">3</span>
-                <span>Hoàn tất đặt hàng</span>
-            </div>
+            @if (Model.Invoice.Status == "Cancelled")
+            {
+                <div class="cps-step-item active">
+                    <span class="cps-step-num bg-danger text-white border-danger"><i class="bi bi-x-lg"></i></span>
+                    <span class="text-danger fw-bold">Đã hủy đơn hàng</span>
+                </div>
+            }
+            else if (Model.Invoice.Status == "CancelRequested")
+            {
+                <div class="cps-step-item active">
+                    <span class="cps-step-num bg-warning text-dark border-warning"><i class="bi bi-clock-history"></i></span>
+                    <span class="text-warning-emphasis fw-bold">Chờ duyệt hủy</span>
+                </div>
+            }
+            else
+            {
+                <div class="cps-step-item active">
+                    <span class="cps-step-num">3</span>
+                    <span>Hoàn tất đặt hàng</span>
+                </div>
+            }
         </div>
     </div>
 
     <div class="cps-cart-container">
         <!-- Main Confirmation Card -->
         <div class="bg-white rounded-3 border p-4 p-md-5 text-center shadow-sm mb-4">
-            <div class="mb-3">
-                <div class="d-inline-flex p-3 rounded-circle" style="background: #dcfce7;">
-                    <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+            @if (Model.Invoice.Status == "Cancelled")
+            {
+                <div class="mb-3">
+                    <div class="d-inline-flex p-3 rounded-circle" style="background: #fee2e2;">
+                        <i class="bi bi-x-circle-fill text-danger" style="font-size: 3rem;"></i>
+                    </div>
                 </div>
-            </div>
-
-            <h3 class="fw-bold mb-2 text-success">ĐẶT HÀNG THÀNH CÔNG!</h3>
-            <p class="text-muted mb-4">
-                Cảm ơn quý khách <strong>@Model.Invoice.CustomerName</strong> đã tin tưởng đặt mua sản phẩm tại hệ thống <strong class="text-primary">KittyPhone</strong>.<br />
-                Mã đơn hàng của bạn là: <strong class="fs-5 text-primary">#@Model.Invoice.InvoiceId</strong>
-            </p>
+                <h3 class="fw-bold mb-2 text-danger">ĐƠN HÀNG ĐÃ ĐƯỢC HỦY</h3>
+                <p class="text-muted mb-4">
+                    Đơn hàng <strong class="fs-5 text-danger">#@Model.Invoice.InvoiceId</strong> của quý khách <strong>@Model.Invoice.CustomerName</strong> đã được hủy trên hệ thống KittyPhone.<br />
+                    Mọi giao dịch thanh toán hoặc chuẩn bị xuất kho cho đơn hàng này đã dừng lại.
+                </p>
+            }
+            else if (Model.Invoice.Status == "CancelRequested")
+            {
+                <div class="mb-3">
+                    <div class="d-inline-flex p-3 rounded-circle" style="background: #fef3c7;">
+                        <i class="bi bi-hourglass-split text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-2 text-warning">YÊU CẦU HỦY ĐƠN ĐANG ĐƯỢC XỬ LÝ</h3>
+                <p class="text-muted mb-4">
+                    Đơn hàng <strong class="fs-5 text-warning">#@Model.Invoice.InvoiceId</strong> của quý khách <strong>@Model.Invoice.CustomerName</strong> đang chờ Quản trị viên (Admin) phê duyệt hủy.
+                </p>
+            }
+            else if (Model.Invoice.Status == "Shipping")
+            {
+                <div class="mb-3">
+                    <div class="d-inline-flex p-3 rounded-circle" style="background: #e0f2fe;">
+                        <i class="bi bi-truck text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-2 text-primary">ĐƠN HÀNG ĐANG ĐƯỢC VẬN CHUYỂN</h3>
+                <p class="text-muted mb-4">
+                    Đơn hàng <strong class="fs-5 text-primary">#@Model.Invoice.InvoiceId</strong> của quý khách <strong>@Model.Invoice.CustomerName</strong> đang trên đường giao tới bạn.
+                </p>
+            }
+            else if (Model.Invoice.Status == "Delivered")
+            {
+                <div class="mb-3">
+                    <div class="d-inline-flex p-3 rounded-circle" style="background: #dcfce7;">
+                        <i class="bi bi-patch-check-fill text-success" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-2 text-success">GIAO HÀNG THÀNH CÔNG!</h3>
+                <p class="text-muted mb-4">
+                    Cảm ơn quý khách <strong>@Model.Invoice.CustomerName</strong> đã tin dùng sản phẩm tại hệ thống <strong class="text-primary">KittyPhone</strong>.<br />
+                    Mã đơn hàng: <strong class="fs-5 text-primary">#@Model.Invoice.InvoiceId</strong>
+                </p>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <div class="d-inline-flex p-3 rounded-circle" style="background: #dcfce7;">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-2 text-success">ĐẶT HÀNG THÀNH CÔNG!</h3>
+                <p class="text-muted mb-4">
+                    Cảm ơn quý khách <strong>@Model.Invoice.CustomerName</strong> đã tin tưởng đặt mua sản phẩm tại hệ thống <strong class="text-primary">KittyPhone</strong>.<br />
+                    Mã đơn hàng của bạn là: <strong class="fs-5 text-primary">#@Model.Invoice.InvoiceId</strong>
+                </p>
+            }
 
             @if (TempData["SuccessMessage"] != null)
             {
@@ -70,7 +139,109 @@
             }
 
             <!-- STATUS NOTICE BOXES -->
-            @if (Model.Invoice.Status == "Pending")
+            @if (Model.Invoice.Status == "Cancelled")
+            {
+                <div class="alert text-start my-4 p-4 rounded-3 border border-danger-subtle bg-danger-subtle text-dark shadow-sm">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-danger fw-bold fs-6">
+                        <i class="bi bi-x-octagon-fill fs-5"></i>
+                        <span>THÔNG TIN CHI TIẾT HỦY ĐƠN HÀNG #@Model.Invoice.InvoiceId</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted">Lý do hủy đơn:</span>
+                        <strong class="text-danger">@(string.IsNullOrEmpty(Model.Invoice.CancelReason) ? "Đơn hàng đã được nhân viên và quản trị viên phê duyệt hủy theo thỏa thuận đối soát." : Model.Invoice.CancelReason)</strong>
+                    </div>
+                    @if (Model.Invoice.CancelApprovedAt.HasValue)
+                    {
+                        <div class="mb-2 small text-secondary">
+                            <i class="bi bi-clock-history me-1"></i>Thời gian phê duyệt hủy: <strong>@Model.Invoice.CancelApprovedAt.Value.ToString("dd/MM/yyyy HH:mm")</strong>
+                            @if (!string.IsNullOrEmpty(Model.Invoice.CancelApprovedBy))
+                            {
+                                <span>(Duyệt bởi: <strong>@Model.Invoice.CancelApprovedBy</strong>)</span>
+                            }
+                        </div>
+                    }
+                    <div class="small text-secondary mt-2 pt-2 border-top border-danger-subtle">
+                        <i class="bi bi-shield-check me-1 text-primary"></i>
+                        Đơn hàng đã được hủy an toàn. Quý khách <strong>không cần thực hiện thanh toán</strong> bất kỳ khoản tiền nào cho đơn này.
+                        @if (Model.Invoice.PaidAmount > 0)
+                        {
+                            <div class="mt-2 p-2 rounded bg-white border border-success-subtle text-success fw-semibold">
+                                <i class="bi bi-cash-coin me-1"></i>Đơn hàng có ghi nhận số tiền đã thanh toán/cọc: <strong>@Model.Invoice.PaidAmount.ToString("N0")đ</strong>. Nhân viên chăm sóc khách hàng KittyPhone sẽ chủ động liên hệ qua SĐT <strong>@Model.Invoice.CustomerPhone</strong> để xử lý hoàn tiền vào tài khoản của quý khách trong 24h làm việc.
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else if (Model.Invoice.Status == "CancelRequested")
+            {
+                <div class="alert text-start my-4 p-4 rounded-3 border border-warning-subtle bg-warning-subtle text-dark shadow-sm">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-warning-emphasis fw-bold fs-6">
+                        <i class="bi bi-hourglass-split fs-5"></i>
+                        <span>YÊU CẦU HỦY ĐƠN ĐANG ĐƯỢC XỬ LÝ</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted">Lý do hủy:</span>
+                        <strong class="text-dark">@(string.IsNullOrEmpty(Model.Invoice.CancelReason) ? "Đang chờ đối soát dữ liệu" : Model.Invoice.CancelReason)</strong>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Invoice.CancelRequestedBy))
+                    {
+                        <div class="mb-2 small text-secondary">
+                            <i class="bi bi-person-fill me-1"></i>Người yêu cầu hủy: <strong>@Model.Invoice.CancelRequestedBy</strong>
+                            @if (Model.Invoice.CancelRequestedAt.HasValue)
+                            {
+                                <span>(@Model.Invoice.CancelRequestedAt.Value.ToString("dd/MM/yyyy HH:mm"))</span>
+                            }
+                        </div>
+                    }
+                    <div class="small text-secondary mt-2 pt-2 border-top border-warning-subtle">
+                        <i class="bi bi-pause-circle-fill me-1 text-warning-emphasis"></i>
+                        Yêu cầu hủy đã được chuyển tới Ban Quản Trị (Admin) để kiểm tra đối soát kho và dòng tiền. Trong thời gian này, vui lòng tạm dừng mọi thao tác thanh toán cho đơn hàng.
+                    </div>
+                </div>
+            }
+            else if (Model.Invoice.Status == "Shipping")
+            {
+                <div class="alert text-start d-flex align-items-center gap-3 my-4 p-3 rounded-3" style="background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af;">
+                    <i class="bi bi-truck fs-1 text-primary flex-shrink-0"></i>
+                    <div>
+                        <strong class="text-dark fs-6 d-block mb-1">
+                            <i class="bi bi-truck text-primary me-1"></i>Trạng thái: Đang giao hàng (Shipping)
+                        </strong>
+                        <span class="small text-secondary">
+                            Đơn hàng đã được kiểm tra, xuất kho và bàn giao cho đối tác vận chuyển (@(Model.Invoice.ShippingCarrierName ?? "Xanh SM Express / GrabExpress")). Bưu tá sẽ liên hệ số điện thoại <strong>@Model.Invoice.CustomerPhone</strong> trước khi giao.
+                        </span>
+                    </div>
+                </div>
+            }
+            else if (Model.Invoice.Status == "Delivered")
+            {
+                <div class="alert text-start d-flex align-items-center gap-3 my-4 p-3 rounded-3" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534;">
+                    <i class="bi bi-patch-check-fill fs-1 text-success flex-shrink-0"></i>
+                    <div>
+                        <strong class="text-dark fs-6 d-block mb-1">
+                            <i class="bi bi-check-circle-fill text-success me-1"></i>Trạng thái: Đã giao hàng thành công (Delivered)
+                        </strong>
+                        <span class="small text-secondary">
+                            Đơn hàng đã giao thành công tới quý khách. Toàn bộ thiết bị trong đơn hàng đã được kích hoạt bảo hành điện tử chính hãng 12 tháng. Quý khách có thể vào mục <strong>Tracking Bảo hành</strong> để theo dõi quyền lợi.
+                        </span>
+                    </div>
+                </div>
+            }
+            else if (Model.Invoice.Status == "Paid")
+            {
+                <div class="alert text-start d-flex align-items-center gap-3 my-4 p-3 rounded-3" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534;">
+                    <i class="bi bi-check-all fs-1 text-success flex-shrink-0"></i>
+                    <div>
+                        <strong class="text-dark fs-6 d-block mb-1">
+                            <i class="bi bi-check-circle-fill text-success me-1"></i>Trạng thái: Đã thanh toán hoàn tất 100% (Paid)
+                        </strong>
+                        <span class="small text-secondary">
+                            Đơn hàng đã được xác nhận thanh toán đủ. KittyPhone đang tiến hành đóng gói chống sốc và bàn giao đối tác giao vận siêu tốc.
+                        </span>
+                    </div>
+                </div>
+            }
+            else if (Model.Invoice.Status == "Pending")
             {
                 <div class="alert text-start d-flex align-items-center gap-3 my-4 p-3 rounded-3" style="background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af;">
                     <i class="bi bi-clock-history fs-1 text-primary flex-shrink-0"></i>
@@ -110,23 +281,9 @@
                     </div>
                 </div>
             }
-            else if (Model.Invoice.Status == "Paid")
-            {
-                <div class="alert text-start d-flex align-items-center gap-3 my-4 p-3 rounded-3" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534;">
-                    <i class="bi bi-check-all fs-1 text-success flex-shrink-0"></i>
-                    <div>
-                        <strong class="text-dark fs-6 d-block mb-1">
-                            <i class="bi bi-check-circle-fill text-success me-1"></i>Trạng thái: Đã thanh toán hoàn tất 100% (Paid)
-                        </strong>
-                        <span class="small text-secondary">
-                            Đơn hàng đã được xác nhận thanh toán đủ. KittyPhone đang tiến hành đóng gói chống sốc và bàn giao đối tác giao vận siêu tốc.
-                        </span>
-                    </div>
-                </div>
-            }
 
             <!-- Installment Details If Applicable -->
-            @if (Model.IsInstallment)
+            @if (Model.IsInstallment && Model.Invoice.Status != "Cancelled")
             {
                 <div class="alert text-start mb-4 p-3 rounded-3" style="background: #faf5ff; border: 1px solid #e9d5ff;">
                     <h6 class="fw-bold text-dark mb-2"><i class="bi bi-credit-card-2-front-fill text-primary me-2"></i>Chi Tiết Gói Trả Góp 0% Lãi Suất:</h6>
@@ -147,58 +304,61 @@
                 </div>
             }
 
-            <!-- VietQR & Transfer Box -->
-            <div class="p-4 rounded-3 text-start mb-4" style="background: #fafafa; border: 1px solid var(--border-color);">
-                <h6 class="fw-bold pb-2 mb-3 border-bottom text-dark">
-                    <i class="bi bi-qr-code-scan me-2 text-primary"></i>THÔNG TIN THANH TOÁN CHUYỂN KHOẢN (VIETQR)
-                </h6>
+            <!-- VietQR & Transfer Box (Chỉ hiển thị khi đơn hàng đang Chờ thanh toán và chưa bị hủy) -->
+            @if (Model.Invoice.Status == "Pending" && Model.Invoice.RemainingAmount > 0)
+            {
+                <div class="p-4 rounded-3 text-start mb-4" style="background: #fafafa; border: 1px solid var(--border-color);">
+                    <h6 class="fw-bold pb-2 mb-3 border-bottom text-dark">
+                        <i class="bi bi-qr-code-scan me-2 text-primary"></i>THÔNG TIN THANH TOÁN CHUYỂN KHOẢN (VIETQR)
+                    </h6>
 
-                <div class="row g-4 align-items-center">
-                    <div class="col-md-5 text-center">
-                        @{
-                            string dynamicConfirmationQr = $"https://img.vietqr.io/image/970454-0396166509-compact2.png?amount={(long)amountToPay}&addInfo={Uri.EscapeDataString(Model.TransferSyntax)}&accountName=DUONG%20NGOC%20ANH";
-                        }
-                        <div class="bg-white p-3 rounded-3 shadow-sm d-inline-block border">
-                            <img src="@dynamicConfirmationQr" alt="Mã QR Chuyển Khoản KittyPhone" class="img-fluid rounded" style="max-width: 210px; height: auto;" />
+                    <div class="row g-4 align-items-center">
+                        <div class="col-md-5 text-center">
+                            @{
+                                string dynamicConfirmationQr = $"https://img.vietqr.io/image/970454-0396166509-compact2.png?amount={(long)amountToPay}&addInfo={Uri.EscapeDataString(Model.TransferSyntax)}&accountName=DUONG%20NGOC%20ANH";
+                            }
+                            <div class="bg-white p-3 rounded-3 shadow-sm d-inline-block border">
+                                <img src="@dynamicConfirmationQr" alt="Mã QR Chuyển Khoản KittyPhone" class="img-fluid rounded" style="max-width: 210px; height: auto;" />
+                            </div>
+                            <div class="small text-muted mt-2 fw-semibold"><i class="bi bi-camera-fill text-primary me-1"></i>Quét bằng ZaloPay hoặc App Ngân Hàng</div>
                         </div>
-                        <div class="small text-muted mt-2 fw-semibold"><i class="bi bi-camera-fill text-primary me-1"></i>Quét bằng ZaloPay hoặc App Ngân Hàng</div>
-                    </div>
 
-                    <div class="col-md-7">
-                        <table class="table table-borderless table-sm mb-0">
-                            <tr>
-                                <td class="text-muted" style="width: 140px;">Ngân hàng:</td>
-                                <td class="fw-bold text-dark">ZaloPay / VietQR</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Số tài khoản:</td>
-                                <td>
-                                    <span class="fw-bold fs-5 text-primary font-monospace">0396166509</span>
-                                    <button type="button" class="btn btn-sm btn-outline-primary ms-2 py-0 px-2" onclick="copyText('0396166509')">Sao chép</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Chủ tài khoản:</td>
-                                <td class="fw-bold text-dark">DUONG NGOC ANH</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Số tiền thanh toán:</td>
-                                <td>
-                                    <span class="fw-bold fs-4 text-primary">@amountToPay.ToString("N0")đ</span>
-                                    <span class="small text-muted ms-1">(@paymentTitle)</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Nội dung chuyển khoản:</td>
-                                <td>
-                                    <span class="badge fs-6 px-3 py-2 text-white font-monospace" style="background: linear-gradient(135deg, #0e2254, #0284c7);">@Model.TransferSyntax</span>
-                                    <button type="button" class="btn btn-sm btn-outline-primary ms-2 py-0 px-2" onclick="copyText('@Model.TransferSyntax')">Sao chép</button>
-                                </td>
-                            </tr>
-                        </table>
+                        <div class="col-md-7">
+                            <table class="table table-borderless table-sm mb-0">
+                                <tr>
+                                    <td class="text-muted" style="width: 140px;">Ngân hàng:</td>
+                                    <td class="fw-bold text-dark">ZaloPay / VietQR</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Số tài khoản:</td>
+                                    <td>
+                                        <span class="fw-bold fs-5 text-primary font-monospace">0396166509</span>
+                                        <button type="button" class="btn btn-sm btn-outline-primary ms-2 py-0 px-2 btn-copy-clipboard" data-copy="0396166509">Sao chép</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Chủ tài khoản:</td>
+                                    <td class="fw-bold text-dark">DUONG NGOC ANH</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Số tiền thanh toán:</td>
+                                    <td>
+                                        <span class="fw-bold fs-4 text-primary">@amountToPay.ToString("N0")đ</span>
+                                        <span class="small text-muted ms-1">(@paymentTitle)</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Nội dung chuyển khoản:</td>
+                                    <td>
+                                        <span class="badge fs-6 px-3 py-2 text-white font-monospace" style="background: linear-gradient(135deg, #0e2254, #0284c7);">@Model.TransferSyntax</span>
+                                        <button type="button" class="btn btn-sm btn-outline-primary ms-2 py-0 px-2 btn-copy-clipboard" data-copy="@Model.TransferSyntax">Sao chép</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             <!-- Order Items Table -->
             <div class="text-start mb-4">
@@ -251,11 +411,23 @@
 
             <!-- Actions -->
             <div class="d-flex justify-content-center gap-3 flex-wrap">
-                <a asp-controller="Customer" asp-action="InvoicePdf" asp-route-id="@Model.Invoice.InvoiceId" target="_blank" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
-                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Xuất / Tải Hóa Đơn VAT (PDF)
+                <a asp-controller="Customer" asp-action="Orders" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                    <i class="bi bi-receipt-cutoff me-1"></i>Xem danh sách đơn hàng
                 </a>
+                @if (Model.Invoice.Status != "Cancelled")
+                {
+                    <a asp-controller="Customer" asp-action="InvoicePdf" asp-route-id="@Model.Invoice.InvoiceId" target="_blank" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-file-earmark-pdf-fill me-1"></i>Xuất / Tải Hóa Đơn VAT (PDF)
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Customer" asp-action="InvoicePdf" asp-route-id="@Model.Invoice.InvoiceId" target="_blank" class="btn btn-outline-danger rounded-pill px-4 fw-bold">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Tải biên lai hủy đơn (PDF)
+                    </a>
+                }
                 <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
-                    <i class="bi bi-house me-1"></i>Tiếp tục mua hàng
+                    <i class="bi bi-house me-1"></i>Tiếp tục mua sắm
                 </a>
                 <a href="tel:0396166509" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background: linear-gradient(135deg, #0e2254, #0284c7);">
                     <i class="bi bi-telephone-fill me-1"></i>Hotline hỗ trợ: 0396166509
@@ -264,13 +436,3 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-<script>
-    function copyText(txt) {
-        navigator.clipboard.writeText(txt).then(function() {
-            alert('Đã sao chép vào bộ nhớ tạm: ' + txt);
-        });
-    }
-</script>
-}

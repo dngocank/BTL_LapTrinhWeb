@@ -1,4 +1,5 @@
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@inject BTL_PTTKYC.Services.IBadgeService BadgeService
 @{
     var sessionCart = HttpContextAccessor.HttpContext?.Session.GetString("KittyPhone_Cart");
     int cartCount = 0;
@@ -11,6 +12,14 @@
         }
         catch { }
     }
+
+    int? currentCustomerId = null;
+    if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer"))
+    {
+        var idStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(idStr, out int cid)) currentCustomerId = cid;
+    }
+    var systemBadges = BadgeService.GetBadgeCounts(currentCustomerId);
 
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
@@ -176,14 +185,26 @@
                         else if (User.IsInRole("Sales"))
                         {
                             <a asp-controller="Sales" asp-action="Orders" class="cps-header-action text-decoration-none">
-                                <i class="bi bi-receipt-cutoff text-success"></i>
+                                <div class="position-relative">
+                                    <i class="bi bi-receipt-cutoff text-success"></i>
+                                    @if (systemBadges.OrdersNeedingAction > 0)
+                                    {
+                                        <span class="badge-notify-zalo badge-header-pos badge-pulse">@systemBadges.OrdersNeedingAction</span>
+                                    }
+                                </div>
                                 <div class="d-flex flex-column text-start">
                                     <span class="cps-action-sub">Quản lý</span>
                                     <span class="cps-action-main">Đơn Hàng</span>
                                 </div>
                             </a>
                             <a asp-controller="Sales" asp-action="Reviews" class="cps-header-action d-none d-md-flex text-decoration-none">
-                                <i class="bi bi-chat-heart text-info"></i>
+                                <div class="position-relative">
+                                    <i class="bi bi-chat-heart text-info"></i>
+                                    @if (systemBadges.UnrepliedReviews > 0)
+                                    {
+                                        <span class="badge-notify-zalo badge-header-pos">@systemBadges.UnrepliedReviews</span>
+                                    }
+                                </div>
                                 <div class="d-flex flex-column text-start">
                                     <span class="cps-action-sub">Phản hồi</span>
                                     <span class="cps-action-main">Reviews</span>
@@ -193,7 +214,13 @@
                         else if (User.IsInRole("Warehouse"))
                         {
                             <a asp-controller="Warehouse" asp-action="Index" class="cps-header-action text-decoration-none">
-                                <i class="bi bi-box-seam-fill text-warning"></i>
+                                <div class="position-relative">
+                                    <i class="bi bi-box-seam-fill text-warning"></i>
+                                    @if (systemBadges.LowStockCount > 0)
+                                    {
+                                        <span class="badge-notify-zalo badge-header-pos">@systemBadges.LowStockCount</span>
+                                    }
+                                </div>
                                 <div class="d-flex flex-column text-start">
                                     <span class="cps-action-sub">Quản lý</span>
                                     <span class="cps-action-main">Kho Hàng</span>
@@ -210,7 +237,13 @@
                         else if (User.IsInRole("Technician"))
                         {
                             <a asp-controller="Technician" asp-action="Workbench" class="cps-header-action text-decoration-none">
-                                <i class="bi bi-tools text-primary"></i>
+                                <div class="position-relative">
+                                    <i class="bi bi-tools text-primary"></i>
+                                    @if (systemBadges.ActiveWarrantyTickets > 0)
+                                    {
+                                        <span class="badge-notify-zalo badge-header-pos">@systemBadges.ActiveWarrantyTickets</span>
+                                    }
+                                </div>
                                 <div class="d-flex flex-column text-start">
                                     <span class="cps-action-sub">Bàn làm việc</span>
                                     <span class="cps-action-main">Kỹ Thuật</span>
@@ -286,8 +319,14 @@
                         @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer"))
                         {
                             <!-- Tra cứu đơn hàng -->
-                            <a asp-controller="Customer" asp-action="Orders" class="cps-header-action d-none d-md-flex text-decoration-none">
-                                <i class="bi bi-truck"></i>
+                            <a asp-controller="Customer" asp-action="Orders" class="cps-header-action d-none d-md-flex text-decoration-none" title="Bạn có @systemBadges.CustomerActiveOrders đơn hàng đang chờ duyệt/xử lý">
+                                <div class="position-relative">
+                                    <i class="bi bi-truck"></i>
+                                    @if (systemBadges.CustomerActiveOrders > 0)
+                                    {
+                                        <span class="badge-notify-zalo badge-header-pos badge-pulse" id="badgeCustomerOrders" title="Bạn có @systemBadges.CustomerActiveOrders đơn hàng đang chờ duyệt/xử lý">@systemBadges.CustomerActiveOrders</span>
+                                    }
+                                </div>
                                 <div class="d-flex flex-column text-start">
                                     <span class="cps-action-sub">Tra cứu</span>
                                     <span class="cps-action-main">Đơn hàng</span>
@@ -295,8 +334,19 @@
                             </a>
 
                             <!-- Tra cứu bảo hành -->
-                            <a asp-controller="Customer" asp-action="Warranty" class="cps-header-action d-none d-lg-flex text-decoration-none">
-                                <i class="bi bi-shield-check"></i>
+                            <a asp-controller="Customer" asp-action="Warranty" class="cps-header-action d-none d-lg-flex text-decoration-none" 
+                               title="@(systemBadges.CustomerActiveWarranty > 0 ? $"Bạn có {systemBadges.CustomerActiveWarranty} phiếu sửa chữa đang tiếp nhận/xử lý" : (systemBadges.CustomerWarrantedDevices > 0 ? $"Bạn có {systemBadges.CustomerWarrantedDevices} thiết bị đang còn hạn bảo hành chính hãng" : "Theo dõi tiến độ bảo hành & sổ thiết bị"))">
+                                <div class="position-relative">
+                                    <i class="bi bi-shield-check"></i>
+                                    @if (systemBadges.CustomerActiveWarranty > 0)
+                                    {
+                                        <span class="badge-notify-zalo badge-header-pos badge-pulse" id="badgeCustomerWarranty" title="Bạn có @systemBadges.CustomerActiveWarranty phiếu sửa chữa đang tiếp nhận/xử lý">@systemBadges.CustomerActiveWarranty</span>
+                                    }
+                                    else if (systemBadges.CustomerWarrantedDevices > 0)
+                                    {
+                                        <span class="badge-notify-zalo badge-header-pos" id="badgeCustomerWarranty" title="Bạn có @systemBadges.CustomerWarrantedDevices thiết bị đang còn hạn bảo hành chính hãng">@systemBadges.CustomerWarrantedDevices</span>
+                                    }
+                                </div>
                                 <div class="d-flex flex-column text-start">
                                     <span class="cps-action-sub">Tracking</span>
                                     <span class="cps-action-main">Bảo hành</span>
@@ -307,7 +357,7 @@
                             <a asp-controller="Cart" asp-action="Index" class="cps-header-action cps-cart-action text-decoration-none">
                                 <div class="position-relative">
                                     <i class="bi bi-bag"></i>
-                                    <span class="cps-cart-badge" id="cartBadgeCount">@cartCount</span>
+                                    <span class="badge-notify-zalo badge-header-pos" id="cartBadgeCount">@cartCount</span>
                                 </div>
                                 <div class="d-flex flex-column text-start d-none d-sm-flex">
                                     <span class="cps-action-sub">Giỏ</span>
@@ -328,10 +378,35 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 py-2">
                                     <li><a class="dropdown-item fw-semibold text-primary" asp-controller="Customer" asp-action="Profile"><i class="bi bi-person-badge me-2"></i>Tài khoản KittyMember</a></li>
-                                    <li><a class="dropdown-item fw-semibold" asp-controller="Customer" asp-action="Orders"><i class="bi bi-receipt me-2"></i>Đơn hàng đã đặt</a></li>
-                                    <li><a class="dropdown-item fw-semibold text-success" asp-controller="Customer" asp-action="Warranty"><i class="bi bi-shield-check me-2"></i>Tracking bảo hành</a></li>
+                                    <li>
+                                        <a class="dropdown-item fw-semibold d-flex justify-content-between align-items-center" asp-controller="Customer" asp-action="Orders">
+                                            <span><i class="bi bi-receipt me-2"></i>Đơn hàng đã đặt</span>
+                                            @if (systemBadges.CustomerActiveOrders > 0)
+                                            {
+                                                <span class="badge-notify-zalo" title="Bạn có @systemBadges.CustomerActiveOrders đơn hàng đang chờ duyệt/xử lý">@systemBadges.CustomerActiveOrders</span>
+                                            }
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item fw-semibold text-success d-flex justify-content-between align-items-center" asp-controller="Customer" asp-action="Warranty">
+                                            <span><i class="bi bi-shield-check me-2"></i>Tracking bảo hành</span>
+                                            @if (systemBadges.CustomerActiveWarranty > 0)
+                                            {
+                                                <span class="badge-notify-zalo" title="Bạn có @systemBadges.CustomerActiveWarranty phiếu sửa chữa đang tiếp nhận/xử lý">@systemBadges.CustomerActiveWarranty</span>
+                                            }
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item fw-semibold text-info d-flex justify-content-between align-items-center" asp-controller="Customer" asp-action="Warranty">
+                                            <span><i class="bi bi-phone-fill me-2"></i>Sổ bảo hành thiết bị</span>
+                                            @if (systemBadges.CustomerWarrantedDevices > 0)
+                                            {
+                                                <span class="badge-notify-zalo" title="Bạn có @systemBadges.CustomerWarrantedDevices thiết bị đang còn hạn bảo hành chính hãng">@systemBadges.CustomerWarrantedDevices</span>
+                                            }
+                                        </a>
+                                    </li>
                                     <li><a class="dropdown-item fw-semibold text-warning" asp-controller="Customer" asp-action="Profile" asp-fragment="homewarranty-pane"><i class="bi bi-house-door me-2"></i>Đăng ký BH tại nhà</a></li>
-                                    <li><a class="dropdown-item fw-semibold text-info" asp-controller="Customer" asp-action="ShippingCalculator"><i class="bi bi-calculator me-2"></i>Ước tính phí ship</a></li>
+                                    <li><a class="dropdown-item fw-semibold text-secondary" asp-controller="Customer" asp-action="ShippingCalculator"><i class="bi bi-calculator me-2"></i>Ước tính phí ship</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form asp-controller="Customer" asp-action="Logout" method="post" class="px-2">

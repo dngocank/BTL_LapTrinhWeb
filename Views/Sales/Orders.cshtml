@@ -1,9 +1,11 @@
 @model List<BTL_PTTKYC.Models.InvoiceModel>
+@inject BTL_PTTKYC.Services.IBadgeService BadgeService
 @{
     ViewData["Title"] = "Quản Lý Đơn Hàng (Orders)";
     Layout = "_AdminLayout";
     string? currentStatus = ViewBag.CurrentStatus as string;
     string? currentKeyword = ViewBag.CurrentKeyword as string;
+    var orderStats = BadgeService.GetBadgeCounts();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
@@ -19,22 +21,30 @@
         <div class="col-lg-7">
             <div class="d-flex flex-wrap gap-2">
                 <a asp-action="Orders" class="btn btn-sm rounded-pill px-3 @(string.IsNullOrEmpty(currentStatus) ? "btn-dark shadow-sm" : "btn-light border text-secondary")">
-                    Tất cả (@Model.Count)
+                    Tất cả (@orderStats.TotalOrders)
                 </a>
                 <a asp-action="Orders" asp-route-status="Pending" class="btn btn-sm rounded-pill px-3 @(currentStatus == "Pending" ? "btn-warning text-dark fw-bold shadow-sm" : "btn-light border text-dark")">
                     <i class="bi bi-clock-history me-1 text-warning"></i>Chờ Sale phê duyệt
+                    @if (orderStats.PendingOrders > 0)
+                    {
+                        <span class="badge-notify-zalo ms-1 badge-pulse">@orderStats.PendingOrders</span>
+                    }
                 </a>
                 <a asp-action="Orders" asp-route-status="Paid" class="btn btn-sm rounded-pill px-3 @(currentStatus == "Paid" ? "btn-success shadow-sm" : "btn-light border text-dark")">
-                    <i class="bi bi-check-circle me-1 text-success"></i>Đã thanh toán
+                    <i class="bi bi-check-circle me-1 text-success"></i>Đã thanh toán (@orderStats.PaidOrders)
                 </a>
                 <a asp-action="Orders" asp-route-status="Shipping" class="btn btn-sm rounded-pill px-3 @(currentStatus == "Shipping" ? "btn-info text-dark fw-bold shadow-sm" : "btn-light border text-dark")">
-                    <i class="bi bi-truck me-1 text-info"></i>Đang giao hàng
+                    <i class="bi bi-truck me-1 text-info"></i>Đang giao hàng (@orderStats.ShippingOrders)
                 </a>
                 <a asp-action="Orders" asp-route-status="Delivered" class="btn btn-sm rounded-pill px-3 @(currentStatus == "Delivered" ? "btn-primary shadow-sm" : "btn-light border text-dark")">
-                    <i class="bi bi-patch-check-fill me-1 text-primary"></i>Đã giao hàng
+                    <i class="bi bi-patch-check-fill me-1 text-primary"></i>Đã giao hàng (@orderStats.DeliveredOrders)
                 </a>
                 <a asp-action="Orders" asp-route-status="CancelRequested" class="btn btn-sm rounded-pill px-3 @(currentStatus == "CancelRequested" ? "btn-warning text-dark fw-bold shadow-sm" : "btn-light border text-dark")">
                     <i class="bi bi-exclamation-diamond me-1 text-warning"></i>Yêu cầu hủy
+                    @if (orderStats.CancelRequestedOrders > 0)
+                    {
+                        <span class="badge-notify-zalo ms-1 badge-pulse">@orderStats.CancelRequestedOrders</span>
+                    }
                 </a>
                 <a asp-action="Orders" asp-route-status="Cancelled" class="btn btn-sm rounded-pill px-3 @(currentStatus == "Cancelled" ? "btn-danger shadow-sm" : "btn-light border text-dark")">
                     <i class="bi bi-x-circle me-1 text-danger"></i>Đã hủy

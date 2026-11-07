@@ -1,3 +1,8 @@
+@inject BTL_PTTKYC.Services.IBadgeService BadgeService
+@{
+    var badges = BadgeService.GetBadgeCounts();
+    int ordersToApprove = User.IsInRole("Admin") ? badges.OrdersNeedingAction : badges.PendingOrders;
+}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -89,12 +94,20 @@
                         <a asp-controller="Sales" asp-action="Orders" class="admin-menu-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Orders" || ViewContext.RouteData.Values["action"]?.ToString() == "OrderDetail" ? "active" : "")">
                             <i class="bi bi-receipt"></i>
                             <span>Quản Lý Đơn Hàng</span>
+                            @if (ordersToApprove > 0)
+                            {
+                                <span class="badge-notify-zalo ms-auto badge-pulse" id="badgeSidebarOrders" title="@ordersToApprove đơn cần duyệt">@ordersToApprove</span>
+                            }
                         </a>
                     </li>
                     <li>
                         <a asp-controller="Sales" asp-action="Reviews" class="admin-menu-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Reviews" ? "active" : "")">
                             <i class="bi bi-chat-heart"></i>
                             <span>Đánh Giá & Nhận Xét</span>
+                            @if (badges.UnrepliedReviews > 0)
+                            {
+                                <span class="badge-notify-zalo ms-auto" id="badgeSidebarReviews" title="@badges.UnrepliedReviews đánh giá chưa phản hồi">@badges.UnrepliedReviews</span>
+                            }
                         </a>
                     </li>
                     <li>
@@ -130,6 +143,10 @@
                         <a asp-controller="Warehouse" asp-action="Inventory" class="admin-menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Warehouse" && ViewContext.RouteData.Values["action"]?.ToString() == "Inventory" ? "active" : "")">
                             <i class="bi bi-boxes"></i>
                             <span>Tồn Kho & Cảnh Báo</span>
+                            @if (badges.LowStockCount > 0)
+                            {
+                                <span class="badge-notify-zalo ms-auto" id="badgeSidebarLowStock" title="@badges.LowStockCount sản phẩm sắp hết">@badges.LowStockCount</span>
+                            }
                         </a>
                     </li>
                     <li>
@@ -153,7 +170,14 @@
                         <a asp-controller="Technician" asp-action="Workbench" class="admin-menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Technician" && ViewContext.RouteData.Values["action"]?.ToString() == "Workbench" ? "active" : "")" style="background: rgba(56, 189, 248, 0.15); border-left: 3px solid #38bdf8;">
                             <i class="bi bi-laptop-fill text-info"></i>
                             <span class="fw-bold text-white">Bàn Làm Việc Kỹ Thuật</span>
-                            <span class="badge bg-primary ms-auto" style="font-size: 0.65rem;">All-in-one</span>
+                            @if (badges.ActiveWarrantyTickets > 0)
+                            {
+                                <span class="badge-notify-zalo ms-auto" id="badgeSidebarWorkbench" title="@badges.ActiveWarrantyTickets phiếu đang xử lý">@badges.ActiveWarrantyTickets</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-primary ms-auto" style="font-size: 0.65rem;">All-in-one</span>
+                            }
                         </a>
                     </li>
                     <li>
@@ -172,6 +196,10 @@
                         <a asp-controller="Technician" asp-action="Tickets" class="admin-menu-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Technician" && (ViewContext.RouteData.Values["action"]?.ToString() == "Tickets" || ViewContext.RouteData.Values["action"]?.ToString() == "Detail" || ViewContext.RouteData.Values["action"]?.ToString() == "Process") ? "active" : "")">
                             <i class="bi bi-tools"></i>
                             <span>Phiếu Xử Lý Bảo Hành</span>
+                            @if (badges.ActiveWarrantyTickets > 0)
+                            {
+                                <span class="badge-notify-zalo ms-auto" id="badgeSidebarTickets">@badges.ActiveWarrantyTickets</span>
+                            }
                         </a>
                     </li>
                     <li>
@@ -206,6 +234,75 @@
                     <h5 class="fw-bold mb-0 text-dark">@ViewData["Title"]</h5>
                 </div>
                 <div class="d-flex align-items-center gap-3">
+                    <!-- Notification Bell Dropdown (Zalo / Messenger Style) -->
+                    <div class="dropdown">
+                        <button class="btn btn-light position-relative rounded-pill border p-1 px-3 d-flex align-items-center gap-2 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo hệ thống cần xử lý">
+                            <i class="bi bi-bell-fill text-danger"></i>
+                            <span class="small fw-bold d-none d-md-inline text-dark">Thông báo</span>
+                            @if (badges.TotalAdminAlerts > 0)
+                            {
+                                <span class="badge-notify-zalo badge-pulse" id="badgeTopbarAlerts">@badges.TotalAdminAlerts</span>
+                            }
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-2" style="min-width: 320px;">
+                            <li class="dropdown-header fw-bold text-dark d-flex justify-content-between align-items-center pb-2 border-bottom">
+                                <span><i class="bi bi-app-indicator me-1 text-primary"></i>Mục Cần Xử Lý</span>
+                                <span class="badge bg-danger rounded-pill">@(User.IsInRole("Admin") ? badges.TotalAdminAlerts : User.IsInRole("Sales") ? badges.TotalSalesAlerts : User.IsInRole("Warehouse") ? badges.TotalWarehouseAlerts : badges.TotalTechnicianAlerts) cần xử lý</span>
+                            </li>
+                            @if (badges.PendingOrders > 0)
+                            {
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded mt-1" asp-controller="Sales" asp-action="Orders" asp-route-status="Pending">
+                                        <span class="small"><i class="bi bi-clock-history text-warning me-2"></i>Đơn hàng chờ duyệt</span>
+                                        <span class="badge-notify-zalo">@badges.PendingOrders</span>
+                                    </a>
+                                </li>
+                            }
+                            @if (badges.CancelRequestedOrders > 0)
+                            {
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded mt-1" asp-controller="Sales" asp-action="Orders" asp-route-status="CancelRequested">
+                                        <span class="small"><i class="bi bi-exclamation-diamond text-danger me-2"></i>Đơn yêu cầu hủy cần duyệt</span>
+                                        <span class="badge-notify-zalo">@badges.CancelRequestedOrders</span>
+                                    </a>
+                                </li>
+                            }
+                            @if ((User.IsInRole("Admin") || User.IsInRole("Sales")) && badges.UnrepliedReviews > 0)
+                            {
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded mt-1" asp-controller="Sales" asp-action="Reviews">
+                                        <span class="small"><i class="bi bi-chat-heart text-info me-2"></i>Đánh giá chưa phản hồi</span>
+                                        <span class="badge-notify-zalo">@badges.UnrepliedReviews</span>
+                                    </a>
+                                </li>
+                            }
+                            @if ((User.IsInRole("Admin") || User.IsInRole("Warehouse")) && badges.LowStockCount > 0)
+                            {
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded mt-1" asp-controller="Warehouse" asp-action="Inventory">
+                                        <span class="small"><i class="bi bi-boxes text-danger me-2"></i>Cảnh báo tồn kho thấp (&le; 5)</span>
+                                        <span class="badge-notify-zalo">@badges.LowStockCount</span>
+                                    </a>
+                                </li>
+                            }
+                            @if ((User.IsInRole("Admin") || User.IsInRole("Technician")) && badges.ActiveWarrantyTickets > 0)
+                            {
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded mt-1" asp-controller="Technician" asp-action="Tickets" asp-route-status="PENDING_ACTIVE">
+                                        <span class="small"><i class="bi bi-tools text-primary me-2"></i>Phiếu bảo hành đang xử lý</span>
+                                        <span class="badge-notify-zalo">@badges.ActiveWarrantyTickets</span>
+                                    </a>
+                                </li>
+                            }
+                            <li><hr class="dropdown-divider my-2"></li>
+                            <li>
+                                <a class="dropdown-item text-center small text-primary fw-semibold" asp-controller="Sales" asp-action="Orders">
+                                    Xem tất cả đơn hàng &rarr;
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
                     <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill">
                         <i class="bi bi-shop me-1"></i>Xem Cửa Hàng
                     </a>

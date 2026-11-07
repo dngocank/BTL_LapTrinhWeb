@@ -103,6 +103,7 @@ namespace BTL_PTTKYC.Models
         public decimal ShippingFee { get; set; }
         public decimal? ShippingDistanceKm { get; set; }
         public string? ShippingServiceType { get; set; }
+        public string ShippingCarrierName => !string.IsNullOrEmpty(ShippingServiceType) ? ShippingServiceType : (!string.IsNullOrEmpty(ShippingCarrier) ? ShippingCarrier : "Xanh SM Express / GrabExpress");
 
         public bool IsInstallment => PaymentMethodSelected != null && PaymentMethodSelected.StartsWith("Trả góp");
 

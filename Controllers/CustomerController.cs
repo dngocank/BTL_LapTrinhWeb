@@ -240,8 +240,10 @@ namespace BTL_PTTKYC.Controllers
             var orders = _orderRepo.GetOrdersByCustomerId(customerId);
             var purchased = _customerRepo.GetPurchasedProducts(customerId);
             var warrantyTickets = _warrantyRepo.GetTicketsByCustomerId(customerId, customer.Phone);
+            var warrantedDevices = _warrantyRepo.GetWarrantedDevicesByCustomerId(customerId);
             var notifications = _notificationService.GetNotificationsByCustomerId(customerId);
 
+            var firstWarranted = warrantedDevices.FirstOrDefault();
             var homeWarrantyForm = new HomeWarrantyRegisterViewModel
             {
                 CustomerId = customer.CustomerId,
@@ -250,7 +252,8 @@ namespace BTL_PTTKYC.Controllers
                 CustomerEmail = customer.Email ?? string.Empty,
                 PickupAddress = customer.Address ?? string.Empty,
                 PurchasedDevices = purchased,
-                DeviceName = purchased.FirstOrDefault()?.ProductName ?? "Điện thoại thông minh",
+                DeviceName = firstWarranted?.ProductName ?? purchased.FirstOrDefault()?.ProductName ?? "Điện thoại thông minh",
+                SerialNumberOrImei = firstWarranted?.ImeiNumber ?? firstWarranted?.SerialNumber ?? string.Empty,
                 PickupDate = DateTime.Today.AddDays(1)
             };
 
@@ -269,6 +272,7 @@ namespace BTL_PTTKYC.Controllers
                 Orders = orders,
                 PurchasedProducts = purchased,
                 WarrantyTickets = warrantyTickets,
+                WarrantedDevices = warrantedDevices,
                 HomeWarrantyForm = homeWarrantyForm,
                 ShippingEstimator = shippingEstimator,
                 RecentNotifications = notifications

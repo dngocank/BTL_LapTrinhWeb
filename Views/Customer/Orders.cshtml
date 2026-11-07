@@ -80,13 +80,33 @@
                                     {
                                         <span class="badge bg-warning text-dark rounded-pill px-2 py-1"><i class="bi bi-clock-history me-1"></i>Chờ Sale phê duyệt</span>
                                     }
+                                    else if (order.Status == "Shipping")
+                                    {
+                                        <span class="badge bg-info text-dark rounded-pill px-2 py-1"><i class="bi bi-truck me-1"></i>Đang giao hàng</span>
+                                    }
+                                    else if (order.Status == "Delivered")
+                                    {
+                                        <span class="badge bg-primary rounded-pill px-2 py-1"><i class="bi bi-patch-check-fill me-1"></i>Đã giao hàng</span>
+                                    }
                                     else if (order.Status == "CancelRequested")
                                     {
                                         <span class="badge bg-warning text-dark rounded-pill px-2 py-1"><i class="bi bi-clock me-1"></i>Chờ duyệt hủy</span>
+                                        @if (!string.IsNullOrEmpty(order.CancelReason))
+                                        {
+                                            <div class="small text-muted fst-italic mt-1" style="font-size: 11px;">
+                                                <i class="bi bi-info-circle me-1"></i>@order.CancelReason
+                                            </div>
+                                        }
                                     }
                                     else if (order.Status == "Cancelled")
                                     {
-                                        <span class="badge bg-secondary rounded-pill px-2 py-1">Đã hủy</span>
+                                        <span class="badge bg-danger rounded-pill px-2 py-1"><i class="bi bi-x-circle-fill me-1"></i>Đã hủy</span>
+                                        @if (!string.IsNullOrEmpty(order.CancelReason))
+                                        {
+                                            <div class="small text-danger fst-italic mt-1" style="font-size: 11px;">
+                                                <i class="bi bi-info-circle me-1"></i>@order.CancelReason
+                                            </div>
+                                        }
                                     }
                                     else
                                     {
@@ -101,6 +121,12 @@
                                         <a asp-controller="Customer" asp-action="InvoicePdf" asp-route-id="@order.InvoiceId" target="_blank" class="btn btn-outline-danger btn-sm rounded-pill px-2" title="Tải hóa đơn VAT & Phiếu bảo hành PDF">
                                             <i class="bi bi-file-earmark-pdf me-1"></i>PDF
                                         </a>
+                                        @if (order.Status == "Delivered" || order.Status == "Paid")
+                                        {
+                                            <a asp-controller="Customer" asp-action="Warranty" class="btn btn-outline-success btn-sm rounded-pill px-2" title="Xem sổ bảo hành điện tử 12 tháng">
+                                                <i class="bi bi-shield-check me-1"></i>Bảo hành
+                                            </a>
+                                        }
                                     </div>
                                 </td>
                             </tr>

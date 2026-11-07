@@ -4,16 +4,19 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using BTL_PTTKYC.Data;
 using BTL_PTTKYC.Models;
+using BTL_PTTKYC.Services;
 
 namespace BTL_PTTKYC.Controllers
 {
     public class AccountController : Controller
     {
         private readonly AccountRepository _accountRepo;
+        private readonly IBadgeService _badgeService;
 
-        public AccountController(AccountRepository accountRepo)
+        public AccountController(AccountRepository accountRepo, IBadgeService badgeService)
         {
             _accountRepo = accountRepo;
+            _badgeService = badgeService;
         }
 
         [HttpGet]
@@ -196,6 +199,41 @@ namespace BTL_PTTKYC.Controllers
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        /// <summary>
+        /// API trả về số lượng thông báo / badge theo thời gian thực (Zalo/Messenger style)
+        /// Dành cho cả quản trị nội bộ (Admin, Sales, Warehouse, Tech) và khách hàng cá nhân
+        /// </summary>
+        [HttpGet]
+        [Route("api/notifications/badge-counts")]
+        public IActionResult GetBadgeCounts()
+        {
+            int? customerId = null;
+            if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer"))
+            {
+                var idStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(idStr, out int cid)) customerId = cid;
+            }
+
+            var counts = _badgeService.GetBadgeCounts(customerId);
+
+            // Bổ sung số lượng món hàng trong giỏ nếu là khách hàng
+            if (User.IsInRole("Customer"))
+            {
+                var cartJson = HttpContext.Session.GetString("KittyPhone_Cart");
+                if (!string.IsNullOrEmpty(cartJson))
+                {
+                    try
+                    {
+                        var cart = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CartItemModel>>(cartJson);
+                        counts.CustomerCartCount = cart?.Sum(c => c.Quantity) ?? 0;
+                    }
+                    catch { }
+                }
+            }
+
+            return Json(new { success = true, data = counts });
         }
     }
 }

@@ -315,6 +315,53 @@ a:hover {
     animation: cartBadgeBump 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* ========================================================
+   ZALO / MESSENGER RED NOTIFICATION BADGE STYLING
+   ======================================================== */
+.badge-notify-zalo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    border: 1.5px solid #ffffff;
+    border-radius: 9999px;
+    box-shadow: 0 2px 5px rgba(220, 38, 38, 0.45);
+    vertical-align: middle;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-sizing: border-box;
+}
+
+.badge-notify-zalo.badge-header-pos {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    z-index: 5;
+}
+
+.badge-notify-zalo.badge-pulse {
+    animation: zaloNotifyPulse 2s infinite;
+}
+
+@keyframes zaloNotifyPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
 .cps-user-avatar {
     width: 26px;
     height: 26px;

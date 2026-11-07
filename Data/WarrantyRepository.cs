@@ -278,11 +278,15 @@ namespace BTL_PTTKYC.Data
                 {
                     var sqlFind = @"
                         SELECT TOP 1 ps.serial_id, w.warranty_id, i.customer_id
-                        FROM Product_Serial ps
-                        LEFT JOIN Warranty w ON w.serial_id = ps.serial_id
-                        LEFT JOIN Invoice_Detail id ON w.invoice_detail_id = id.invoice_detail_id
-                        LEFT JOIN Invoice i ON id.invoice_id = i.invoice_id
-                        WHERE ps.imei_number = @q OR ps.serial_number = @q";
+                        FROM Invoice i
+                        JOIN Invoice_Detail id ON i.invoice_id = id.invoice_id
+                        JOIN Product p ON id.product_id = p.product_id
+                        LEFT JOIN Warranty w ON w.invoice_detail_id = id.invoice_detail_id
+                        LEFT JOIN Product_Serial ps ON w.serial_id = ps.serial_id
+                        WHERE ps.imei_number = @q 
+                           OR ps.serial_number = @q
+                           OR ('INV-' + RIGHT('000' + CAST(i.invoice_id AS VARCHAR), 3) + '-P' + CAST(p.product_id AS VARCHAR)) = @q
+                           OR ('INV-' + CAST(i.invoice_id AS VARCHAR) + '-P' + CAST(p.product_id AS VARCHAR)) = @q";
 
                     using var cmdFind = new SqlCommand(sqlFind, conn);
                     cmdFind.Parameters.AddWithValue("@q", model.SerialNumberOrImei.Trim());
@@ -572,7 +576,61 @@ namespace BTL_PTTKYC.Data
                 }
             }
 
-            // If not found by IMEI, fallback to search by Customer Phone or Ticket Code
+            // 2. If not found by IMEI, fallback to search by invoice identifier INV-004-P82 or Product_Serial
+            if (!res.Found)
+            {
+                var sqlFallbackInv = @"
+                    SELECT TOP 1 
+                        w.warranty_id, w.warranty_start, w.warranty_end, w.warranty_status, w.warranty_note,
+                        id.invoice_id, i.invoice_date, c.customer_id, c.customer_name, c.phone AS customer_phone,
+                        p.product_id, p.product_name, b.brand_name,
+                        ps.imei_number, ps.serial_number
+                    FROM Invoice i
+                    JOIN Customer c         ON i.customer_id = c.customer_id
+                    JOIN Invoice_Detail id  ON i.invoice_id = id.invoice_id
+                    JOIN Product p          ON id.product_id = p.product_id
+                    JOIN Brand b            ON p.brand_id = b.brand_id
+                    LEFT JOIN Warranty w    ON id.invoice_detail_id = w.invoice_detail_id
+                    LEFT JOIN Product_Serial ps ON w.serial_id = ps.serial_id
+                    WHERE ('INV-' + RIGHT('000' + CAST(i.invoice_id AS VARCHAR), 3) + '-P' + CAST(p.product_id AS VARCHAR)) = @q
+                       OR ('INV-' + CAST(i.invoice_id AS VARCHAR) + '-P' + CAST(p.product_id AS VARCHAR)) = @q
+                       OR ps.imei_number = @q 
+                       OR ps.serial_number = @q
+                    ORDER BY i.invoice_date DESC";
+
+                using (var cmdInv = new SqlCommand(sqlFallbackInv, conn))
+                {
+                    cmdInv.Parameters.AddWithValue("@q", query.Trim());
+                    using var r = cmdInv.ExecuteReader();
+                    if (r.Read())
+                    {
+                        res.Found = true;
+                        int invId = Convert.ToInt32(r["invoice_id"]);
+                        int prodId = Convert.ToInt32(r["product_id"]);
+                        res.ProductId = prodId;
+                        res.ProductName = r["product_name"]?.ToString();
+                        res.BrandName = r["brand_name"]?.ToString();
+                        res.ImeiNumber = r["imei_number"] != DBNull.Value ? r["imei_number"].ToString() : $"INV-{invId:D3}-P{prodId}";
+                        res.SerialNumber = r["serial_number"] != DBNull.Value ? r["serial_number"].ToString() : $"SN-INV{invId:D3}";
+                        res.WarrantyId = r["warranty_id"] != DBNull.Value ? Convert.ToInt32(r["warranty_id"]) : null;
+                        res.InvoiceId = invId;
+                        res.InvoiceDate = r["invoice_date"] != DBNull.Value ? Convert.ToDateTime(r["invoice_date"]) : null;
+                        res.CustomerId = r["customer_id"] != DBNull.Value ? Convert.ToInt32(r["customer_id"]) : null;
+                        res.CustomerName = r["customer_name"]?.ToString();
+                        res.CustomerPhone = r["customer_phone"]?.ToString();
+
+                        DateTime start = r["warranty_start"] != DBNull.Value ? Convert.ToDateTime(r["warranty_start"]) : (res.InvoiceDate ?? DateTime.Today);
+                        DateTime end = r["warranty_end"] != DBNull.Value ? Convert.ToDateTime(r["warranty_end"]) : start.AddMonths(12);
+                        res.WarrantyStart = start;
+                        res.WarrantyEnd = end;
+                        res.WarrantyStatus = r["warranty_status"]?.ToString() ?? (DateTime.Today <= end ? "Active" : "Expired");
+                        res.IsEligible = end >= DateTime.Today;
+                        res.DaysLeft = res.IsEligible ? (end - DateTime.Today).Days : 0;
+                    }
+                }
+            }
+
+            // 3. If not found by IMEI or Invoice ID, fallback to search by Customer Phone or Ticket Code
             if (!res.Found)
             {
                 var sqlFallback = @"
@@ -681,17 +739,22 @@ namespace BTL_PTTKYC.Data
             using var r = cmd.ExecuteReader();
             while (r.Read())
             {
+                int invId = Convert.ToInt32(r["invoice_id"]);
+                int prodId = Convert.ToInt32(r["product_id"]);
+                string? imei = r["imei_number"] != DBNull.Value ? r["imei_number"].ToString() : $"INV-{invId:D3}-P{prodId}";
+                string? serial = r["serial_number"] != DBNull.Value ? r["serial_number"].ToString() : $"SN-INV{invId:D3}";
+
                 list.Add(new WarrantyCardModel
                 {
                     WarrantyId = Convert.ToInt32(r["warranty_id"]),
                     InvoiceDetailId = Convert.ToInt32(r["invoice_detail_id"]),
                     SerialId = r["serial_id"] != DBNull.Value ? Convert.ToInt32(r["serial_id"]) : null,
-                    ImeiNumber = r["imei_number"] != DBNull.Value ? r["imei_number"].ToString() : null,
-                    SerialNumber = r["serial_number"] != DBNull.Value ? r["serial_number"].ToString() : null,
-                    ProductId = Convert.ToInt32(r["product_id"]),
+                    ImeiNumber = imei,
+                    SerialNumber = serial,
+                    ProductId = prodId,
                     ProductName = r["product_name"].ToString()!,
                     BrandName = r["brand_name"].ToString()!,
-                    InvoiceId = Convert.ToInt32(r["invoice_id"]),
+                    InvoiceId = invId,
                     CustomerName = r["customer_name"].ToString()!,
                     CustomerPhone = r["customer_phone"].ToString()!,
                     WarrantyStart = Convert.ToDateTime(r["warranty_start"]),
@@ -706,7 +769,7 @@ namespace BTL_PTTKYC.Data
 
         /// <summary>
         /// Truy vấn danh sách thiết bị đang được bảo hành chính hãng của Khách hàng theo CustomerId
-        /// Kết hợp các bảng: Warranty, Invoice_Detail, Invoice, Product, Brand và Product_Serial.
+        /// Hỗ trợ hóa đơn có trạng thái Delivered HOẶC Paid. Tự động kích hoạt sổ bảo hành và fallback mã định danh INV-{InvoiceId}-P{ProductId}.
         /// </summary>
         public List<WarrantyCardModel> GetWarrantedDevicesByCustomerId(int customerId)
         {
@@ -714,48 +777,155 @@ namespace BTL_PTTKYC.Data
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
 
+            // 1. Tự động kiểm tra và đồng bộ / kích hoạt sổ bảo hành cho các sản phẩm thuộc hóa đơn Delivered hoặc Paid
+            // Nếu đơn hàng chưa có bản ghi trong Warranty, tự động kích hoạt bảo hành điện tử chính hãng 12 tháng.
+            var sqlUnsynced = @"
+                SELECT 
+                    id.invoice_detail_id,
+                    id.invoice_id,
+                    id.product_id,
+                    id.quantity,
+                    i.invoice_date
+                FROM Invoice i
+                JOIN Invoice_Detail id ON i.invoice_id = id.invoice_id
+                LEFT JOIN Warranty w ON id.invoice_detail_id = w.invoice_detail_id
+                WHERE i.customer_id = @customerId
+                  AND i.status IN ('Delivered', 'Paid')
+                  AND w.warranty_id IS NULL";
+
+            var unactivatedItems = new List<(int detailId, int invoiceId, int productId, int quantity, DateTime invoiceDate)>();
+            using (var cmdUnsynced = new SqlCommand(sqlUnsynced, conn))
+            {
+                cmdUnsynced.Parameters.AddWithValue("@customerId", customerId);
+                using var rUnsynced = cmdUnsynced.ExecuteReader();
+                while (rUnsynced.Read())
+                {
+                    unactivatedItems.Add((
+                        Convert.ToInt32(rUnsynced["invoice_detail_id"]),
+                        Convert.ToInt32(rUnsynced["invoice_id"]),
+                        Convert.ToInt32(rUnsynced["product_id"]),
+                        Convert.ToInt32(rUnsynced["quantity"]),
+                        Convert.ToDateTime(rUnsynced["invoice_date"])
+                    ));
+                }
+            }
+
+            // Tự động kích hoạt bản ghi Warranty cho các mục chưa có
+            foreach (var item in unactivatedItems)
+            {
+                int? foundSerialId = null;
+                var sqlCheckSerial = @"
+                    SELECT TOP 1 serial_id 
+                    FROM Product_Serial 
+                    WHERE product_id = @pid AND status = 'In Stock' 
+                    ORDER BY serial_id ASC";
+                using (var cmdSerial = new SqlCommand(sqlCheckSerial, conn))
+                {
+                    cmdSerial.Parameters.AddWithValue("@pid", item.productId);
+                    var res = cmdSerial.ExecuteScalar();
+                    if (res != null && res != DBNull.Value)
+                    {
+                        foundSerialId = Convert.ToInt32(res);
+                    }
+                }
+
+                if (foundSerialId.HasValue)
+                {
+                    using var cmdMarkSold = new SqlCommand("UPDATE Product_Serial SET status = 'Sold' WHERE serial_id = @sid", conn);
+                    cmdMarkSold.Parameters.AddWithValue("@sid", foundSerialId.Value);
+                    cmdMarkSold.ExecuteNonQuery();
+                }
+
+                DateTime startDate = item.invoiceDate;
+                DateTime endDate = startDate.AddMonths(12);
+                string status = (DateTime.Today <= endDate) ? "Active" : "Expired";
+                string note = $"Kích hoạt bảo hành điện tử chính hãng 12 tháng KittyCare theo hóa đơn #{item.invoiceId}";
+
+                var sqlInsertWarranty = @"
+                    INSERT INTO Warranty (invoice_detail_id, serial_id, warranty_start, warranty_end, warranty_status, warranty_note)
+                    VALUES (@detailId, @serialId, @start, @end, @status, @note)";
+                using var cmdInsert = new SqlCommand(sqlInsertWarranty, conn);
+                cmdInsert.Parameters.AddWithValue("@detailId", item.detailId);
+                cmdInsert.Parameters.AddWithValue("@serialId", (object?)foundSerialId ?? DBNull.Value);
+                cmdInsert.Parameters.AddWithValue("@start", startDate);
+                cmdInsert.Parameters.AddWithValue("@end", endDate);
+                cmdInsert.Parameters.AddWithValue("@status", status);
+                cmdInsert.Parameters.AddWithValue("@note", note);
+                cmdInsert.ExecuteNonQuery();
+            }
+
+            // 2. Truy vấn danh sách thiết bị bảo hành đầy đủ của khách hàng (LEFT JOIN Warranty để đảm bảo luôn hiển thị)
             var sql = @"
                 SELECT 
-                    w.warranty_id, w.invoice_detail_id, w.serial_id, w.warranty_start, w.warranty_end,
-                    w.warranty_status, w.warranty_note,
-                    ps.imei_number, ps.serial_number,
-                    p.product_id, p.product_name, p.image_url, b.brand_name,
-                    i.invoice_id, i.invoice_date, c.customer_name, c.phone AS customer_phone
-                FROM Warranty w
-                JOIN Invoice_Detail id  ON w.invoice_detail_id = id.invoice_detail_id
-                JOIN Invoice i          ON id.invoice_id = i.invoice_id
+                    ISNULL(w.warranty_id, 0) AS warranty_id,
+                    id.invoice_detail_id, 
+                    w.serial_id, 
+                    ISNULL(w.warranty_start, i.invoice_date) AS warranty_start, 
+                    ISNULL(w.warranty_end, DATEADD(month, 12, i.invoice_date)) AS warranty_end,
+                    ISNULL(w.warranty_status, CASE WHEN DATEADD(month, 12, i.invoice_date) >= CAST(GETDATE() AS DATE) THEN 'Active' ELSE 'Expired' END) AS warranty_status, 
+                    w.warranty_note,
+                    ps.imei_number, 
+                    ps.serial_number,
+                    p.product_id, 
+                    p.product_name, 
+                    p.image_url, 
+                    b.brand_name,
+                    i.invoice_id, 
+                    i.invoice_date, 
+                    c.customer_name, 
+                    c.phone AS customer_phone
+                FROM Invoice i
                 JOIN Customer c         ON i.customer_id = c.customer_id
+                JOIN Invoice_Detail id  ON i.invoice_id = id.invoice_id
                 JOIN Product p          ON id.product_id = p.product_id
                 JOIN Brand b            ON p.brand_id = b.brand_id
+                LEFT JOIN Warranty w    ON id.invoice_detail_id = w.invoice_detail_id
                 LEFT JOIN Product_Serial ps ON w.serial_id = ps.serial_id
                 WHERE i.customer_id = @customerId
-                ORDER BY w.warranty_end DESC, w.warranty_id DESC";
+                  AND i.status IN ('Delivered', 'Paid')
+                ORDER BY ISNULL(w.warranty_end, DATEADD(month, 12, i.invoice_date)) DESC, id.invoice_detail_id DESC";
 
             using var cmd = new SqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@customerId", customerId);
 
-            using var r = cmd.ExecuteReader();
-            while (r.Read())
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
             {
+                int invId = Convert.ToInt32(rdr["invoice_id"]);
+                int pId = Convert.ToInt32(rdr["product_id"]);
+
+                string? imei = rdr["imei_number"] != DBNull.Value ? rdr["imei_number"].ToString() : null;
+                string? serial = rdr["serial_number"] != DBNull.Value ? rdr["serial_number"].ToString() : null;
+
+                // Fallback tự động nếu chưa có IMEI trong kho: INV-004-P{ProductId}
+                if (string.IsNullOrWhiteSpace(imei))
+                {
+                    imei = $"INV-{invId:D3}-P{pId}";
+                }
+                if (string.IsNullOrWhiteSpace(serial))
+                {
+                    serial = $"SN-INV{invId:D3}";
+                }
+
                 list.Add(new WarrantyCardModel
                 {
-                    WarrantyId = Convert.ToInt32(r["warranty_id"]),
-                    InvoiceDetailId = Convert.ToInt32(r["invoice_detail_id"]),
-                    SerialId = r["serial_id"] != DBNull.Value ? Convert.ToInt32(r["serial_id"]) : null,
-                    ImeiNumber = r["imei_number"] != DBNull.Value ? r["imei_number"].ToString() : null,
-                    SerialNumber = r["serial_number"] != DBNull.Value ? r["serial_number"].ToString() : null,
-                    ProductId = Convert.ToInt32(r["product_id"]),
-                    ProductName = r["product_name"].ToString()!,
-                    ImageUrl = r["image_url"] != DBNull.Value ? r["image_url"].ToString() : null,
-                    BrandName = r["brand_name"].ToString()!,
-                    InvoiceId = Convert.ToInt32(r["invoice_id"]),
-                    PurchaseDate = Convert.ToDateTime(r["invoice_date"]),
-                    CustomerName = r["customer_name"].ToString()!,
-                    CustomerPhone = r["customer_phone"].ToString()!,
-                    WarrantyStart = Convert.ToDateTime(r["warranty_start"]),
-                    WarrantyEnd = Convert.ToDateTime(r["warranty_end"]),
-                    WarrantyStatus = r["warranty_status"].ToString()!,
-                    WarrantyNote = r["warranty_note"] != DBNull.Value ? r["warranty_note"].ToString() : null
+                    WarrantyId = Convert.ToInt32(rdr["warranty_id"]),
+                    InvoiceDetailId = Convert.ToInt32(rdr["invoice_detail_id"]),
+                    SerialId = rdr["serial_id"] != DBNull.Value ? Convert.ToInt32(rdr["serial_id"]) : null,
+                    ImeiNumber = imei,
+                    SerialNumber = serial,
+                    ProductId = pId,
+                    ProductName = rdr["product_name"].ToString()!,
+                    ImageUrl = rdr["image_url"] != DBNull.Value ? rdr["image_url"].ToString() : null,
+                    BrandName = rdr["brand_name"].ToString()!,
+                    InvoiceId = invId,
+                    PurchaseDate = Convert.ToDateTime(rdr["invoice_date"]),
+                    CustomerName = rdr["customer_name"].ToString()!,
+                    CustomerPhone = rdr["customer_phone"].ToString()!,
+                    WarrantyStart = Convert.ToDateTime(rdr["warranty_start"]),
+                    WarrantyEnd = Convert.ToDateTime(rdr["warranty_end"]),
+                    WarrantyStatus = rdr["warranty_status"].ToString()!,
+                    WarrantyNote = rdr["warranty_note"] != DBNull.Value ? rdr["warranty_note"].ToString() : null
                 });
             }
 
