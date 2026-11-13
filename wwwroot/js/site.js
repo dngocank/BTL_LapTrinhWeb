@@ -670,10 +670,31 @@ function initCheckoutPage() {
         return Math.round(num).toLocaleString('vi-VN') + 'đ';
     }
 
+    // Helper chuẩn hóa số khoảng cách (hỗ trợ cả dấu chấm '5.0' lẫn dấu phẩy '5,0')
+    function parseDistanceKm(val) {
+        if (val === undefined || val === null) return 5.0;
+        var str = String(val).trim().replace(',', '.');
+        var num = parseFloat(str);
+        if (isNaN(num) || num <= 0) return 5.0;
+        return Math.min(Math.max(num, 0.5), 2000);
+    }
+
     var subTotalAmount = parseFloat($('#hdnSubTotal').val()) || 0;
     var discountAmount = parseFloat($('#hdnDiscountAmount').val()) || 0;
     var shippingFeeAmount = parseFloat($('#hdnShippingFee').val()) || 0;
     var currentTotal = subTotalAmount;
+
+    // Ngăn phím Enter trên các ô input tự động submit form Đặt Hàng Ngay
+    $('#checkoutForm').on('keydown', 'input', function (e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            $(this).blur();
+            if ($(this).attr('id') === 'txtDistanceKmInput') {
+                recalculateShipping(true);
+            }
+            return false;
+        }
+    });
 
     // 1. Chuyển đổi phương thức nhận hàng (Giao hàng tận nhà vs Lấy tại cửa hàng)
     function selectDeliveryMethod(method) {
@@ -716,7 +737,7 @@ function initCheckoutPage() {
             if (activeCard.length > 0) {
                 selectCarrier(activeCard[0]);
             } else {
-                recalculateShipping();
+                recalculateShipping(true);
             }
         }
     }
@@ -774,36 +795,66 @@ function initCheckoutPage() {
             }
         }
 
-        recalculateShipping();
+        recalculateShipping(true);
     });
 
-    // 4. Xử lý thay đổi khoảng cách km thủ công
+    // 4. Xử lý thay đổi khoảng cách km thủ công (hỗ trợ cả dấu chấm '5.0' lẫn dấu phẩy '5,0')
     var distanceTimer = null;
-    $('#txtDistanceKmInput').on('input change', function () {
-        var km = parseFloat($(this).val()) || 5.0;
+    var shippingXhr = null;
+    var lastCalculatedDistance = -1;
+    var BTN_CALC_DEFAULT_HTML = '<i class="bi bi-arrow-repeat"></i> Tính cước';
+
+    $('#txtDistanceKmInput').on('input', function () {
+        var rawVal = $(this).val();
+        var km = parseDistanceKm(rawVal);
         $('#hdnShippingDistanceKm').val(km);
 
         clearTimeout(distanceTimer);
         distanceTimer = setTimeout(function () {
-            recalculateShipping();
-        }, 350);
+            recalculateShipping(false);
+        }, 400);
+    });
+
+    $('#txtDistanceKmInput').on('blur change', function () {
+        var km = parseDistanceKm($(this).val());
+        $(this).val(km);
+        $('#hdnShippingDistanceKm').val(km);
+        if (km !== lastCalculatedDistance) {
+            recalculateShipping(false);
+        }
     });
 
     $('#btnRecalculateShipping').on('click', function (e) {
         e.preventDefault();
-        recalculateShipping();
+        var km = parseDistanceKm($('#txtDistanceKmInput').val());
+        $('#txtDistanceKmInput').val(km);
+        $('#hdnShippingDistanceKm').val(km);
+        recalculateShipping(true);
     });
 
     // 5. AJAX Tính cước vận chuyển tự động
-    function recalculateShipping() {
+    function recalculateShipping(force) {
         if ($('#hdnDeliveryMethod').val() === 'StorePickup') return;
 
-        var distance = parseFloat($('#txtDistanceKmInput').val()) || 5.0;
+        var distance = parseDistanceKm($('#txtDistanceKmInput').val());
         var district = $('#cboDistrictQuick').val() || 'Cầu Giấy';
         var address = $('#txtAddressInput').val() || 'Hà Nội';
         var currentCarrier = $('#hdnShippingCarrier').val();
 
-        $.ajax({
+        // Nếu khoảng cách không đổi và không phải ép tính lại (force) thì bỏ qua
+        if (!force && distance === lastCalculatedDistance) {
+            return;
+        }
+
+        // Hủy request tính cước trước đó nếu vẫn đang chờ
+        if (shippingXhr && shippingXhr.readyState !== 4) {
+            shippingXhr.abort();
+        }
+
+        var $btnCalc = $('#btnRecalculateShipping');
+        $btnCalc.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Đang tính...');
+
+        shippingXhr = $.ajax({
             url: '/Cart/CalculateShipping',
             type: 'POST',
             contentType: 'application/json',
@@ -818,6 +869,7 @@ function initCheckoutPage() {
                 shippingMethod: $('#hdnShippingMethod').val() || 'HomeDelivery'
             }),
             success: function (res) {
+                lastCalculatedDistance = distance;
                 if (res && res.success) {
                     if (res.deliveryMethod === 'StorePickup') {
                         shippingFeeAmount = 0;
@@ -842,7 +894,12 @@ function initCheckoutPage() {
                 }
             },
             error: function (xhr, status, err) {
-                console.warn('Không thể tải cước shipping động từ CartController, giữ phí hiện tại:', err);
+                if (status !== 'abort') {
+                    console.warn('Không thể tải cước shipping động từ CartController, giữ phí hiện tại:', err);
+                }
+            },
+            complete: function () {
+                $btnCalc.prop('disabled', false).html(BTN_CALC_DEFAULT_HTML);
             }
         });
     }
@@ -890,6 +947,20 @@ function initCheckoutPage() {
                 selectCarrier(col.find('.carrier-option-card')[0]);
             }
         });
+
+        // Fallback: Nếu hãng xe trước đó không còn khả dụng cho cự ly mới, tự động chọn hãng đầu tiên / hãng khuyến nghị
+        if (!foundSelected && options.length > 0) {
+            var defaultOpt = options.find(function (o) { return o.isRecommended; }) || options[0];
+            var targetCard = container.find('.carrier-option-card[data-carrier="' + defaultOpt.carrierCode + '"]');
+            if (targetCard.length > 0) {
+                selectCarrier(targetCard[0]);
+            } else {
+                var firstCard = container.find('.carrier-option-card').first();
+                if (firstCard.length > 0) {
+                    selectCarrier(firstCard[0]);
+                }
+            }
+        }
     }
 
     // 7. Cập nhật tổng thanh toán và tóm tắt phương thức chi trả
@@ -960,7 +1031,7 @@ function initCheckoutPage() {
             $('#rowDiscount').hide();
             $('#promoDescriptionBox').slideUp();
             recalculateGrandTotal();
-            recalculateShipping();
+            recalculateShipping(true);
             return;
         }
 
@@ -991,7 +1062,7 @@ function initCheckoutPage() {
                 $('#rowDiscount').hide();
             }
             recalculateGrandTotal();
-            recalculateShipping();
+            recalculateShipping(true);
         }).fail(function () {
             $('#promoErrorText').text('Lỗi kiểm tra mã khuyến mãi. Vui lòng thử lại.');
             $('#promoErrorBox').slideDown();
@@ -1030,7 +1101,7 @@ function initCheckoutPage() {
     });
 
     // 10. Kích hoạt tính cước ban đầu
-    recalculateShipping();
+    recalculateShipping(true);
     updatePaymentSummary();
 }
 
